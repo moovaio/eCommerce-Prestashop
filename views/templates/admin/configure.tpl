@@ -24,17 +24,14 @@
 *}
 
 <div class="panel">
-	<h3><i class="icon icon-truck"></i> {l s='My shipping module' mod='Moova'}</h3>
+	<h3><i class="icon icon-truck"></i> {l s='Moova Configuration' mod='Moova'}</h3>
 	<img src="{$module_dir|escape:'html':'UTF-8'}/logo.png" id="payment-logo" class="pull-right" />
 	<p>
-		<strong>{l s='Here is my new shipping module!' mod='Moova'}</strong><br />
-		{l s='Thanks to PrestaShop, now I have a great shipping module.' mod='Moova'}<br />
-		{l s='I can configure it using the following configuration form.' mod='Moova'}
+		<strong>{l s='Moova shipping' mod='Moova'}</strong><br />
+		{l s='This module will take care of all the shippings for yoy' mod='Moova'}<br />
+		{l s='More information on the documentation' mod='Moova'}
 	</p>
-	<br />
-	<p>	
-		{l s='This module will boost your sales!' mod='Moova'}
-	</p>
+	<br /> 
 </div>
 
 <div class="panel">

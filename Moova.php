@@ -1,33 +1,34 @@
 <?php
+
 /**
-* 2007-2019 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2019 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
+ * 2007-2019 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ *  @author    PrestaShop SA <contact@prestashop.com>
+ *  @copyright 2007-2019 PrestaShop SA
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
+use Moova\Api;
 class Moova extends CarrierModule
 {
     protected $config_form = false;
@@ -37,7 +38,7 @@ class Moova extends CarrierModule
         $this->name = 'Moova';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
-        $this->author = 'Axel Candia';
+        $this->author = 'Moova.io';
         $this->need_instance = 0;
 
         /**
@@ -46,7 +47,6 @@ class Moova extends CarrierModule
         $this->bootstrap = true;
 
         parent::__construct();
-
         $this->displayName = $this->l('Moova');
         $this->description = $this->l('This Moova extension allows you to display real-time shipping quotes to your customers based on their cart details and shipping address. We produce shipping labels that can be downloaded both from this extension or on the website. Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at every time.');
 
@@ -59,8 +59,7 @@ class Moova extends CarrierModule
      */
     public function install()
     {
-        if (extension_loaded('curl') == false)
-        {
+        if (extension_loaded('curl') == false) {
             $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
             return false;
         }
@@ -69,6 +68,9 @@ class Moova extends CarrierModule
         $this->addZones($carrier);
         $this->addGroups($carrier);
         $this->addRanges($carrier);
+
+
+
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
 
         return parent::install() &&
@@ -96,15 +98,15 @@ class Moova extends CarrierModule
         /**
          * If values have been submitted in the form, process.
          */
-        if (((bool)Tools::isSubmit('submitMoovaModule')) == true) {
+        if (((bool) Tools::isSubmit('submitMoovaModule')) == true) {
             $this->postProcess();
         }
 
         $this->context->smarty->assign('module_dir', $this->_path);
 
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
-        return $output.$this->renderForm();
+        return $output . $this->renderForm();
     }
 
     /**
@@ -123,7 +125,7 @@ class Moova extends CarrierModule
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'submitMoovaModule';
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+            . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
         $helper->tpl_vars = array(
@@ -143,8 +145,8 @@ class Moova extends CarrierModule
         return array(
             'form' => array(
                 'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
+                    'title' => $this->l('Settings'),
+                    'icon' => 'icon-cogs',
                 ),
                 'input' => array(
                     array(
@@ -152,7 +154,7 @@ class Moova extends CarrierModule
                         'label' => $this->l('Live mode'),
                         'name' => 'MOOVA_LIVE_MODE',
                         'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
+                        'desc' => $this->l('Use this module in live mode. Remember app id and key are different in production'),
                         'values' => array(
                             array(
                                 'id' => 'active_on',
@@ -168,16 +170,16 @@ class Moova extends CarrierModule
                     ),
                     array(
                         'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'MOOVA_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
-                    ),
+                        'type' => 'text', 
+                        'desc' => $this->l('Enter the app id'),
+                        'name' => 'MOOVA_APP_ID',
+                        'label' => $this->l('App id'),
+                    ), 
                     array(
                         'type' => 'password',
-                        'name' => 'MOOVA_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
+                        'name' => 'MOOVA_APP_KEY',
+                        'label' => $this->l('App key'),
+                        'desc' => $this->l('Enter the app key'),
                     ),
                 ),
                 'submit' => array(
@@ -194,8 +196,9 @@ class Moova extends CarrierModule
     {
         return array(
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            'MOOVA_ACCOUNT_EMAIL' => Configuration::get('MOOVA_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'MOOVA_ACCOUNT_PASSWORD' => Configuration::get('MOOVA_ACCOUNT_PASSWORD', null),
+            'MOOVA_APP_ID' => Configuration::get('APP_ID', ''),
+            'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
+            
         );
     }
 
@@ -213,8 +216,7 @@ class Moova extends CarrierModule
 
     public function getOrderShippingCost($params, $shipping_cost)
     {
-        if (Context::getContext()->customer->logged == true)
-        {
+        if (Context::getContext()->customer->logged == true) {
             $id_address_delivery = Context::getContext()->cart->id_address_delivery;
             $address = new Address($id_address_delivery);
 
@@ -222,7 +224,7 @@ class Moova extends CarrierModule
              * Send the details through the API
              * Return the price sent by the API
              */
-            return 10;
+            return ;
         }
 
         return $shipping_cost;
@@ -237,8 +239,10 @@ class Moova extends CarrierModule
     {
         $carrier = new Carrier();
 
-        $carrier->name = $this->l('My super carrier');
+        $carrier->name = $this->l('Moova');
         $carrier->is_module = true;
+       // $carrier->url = 'https://api-dev.moova.io/exgernal=?';
+       // $carrier->shipping_handling = 9;
         $carrier->active = 1;
         $carrier->range_behavior = 1;
         $carrier->need_range = 1;
@@ -248,12 +252,11 @@ class Moova extends CarrierModule
         $carrier->shipping_method = 2;
 
         foreach (Language::getLanguages() as $lang)
-            $carrier->delay[$lang['id_lang']] = $this->l('Super fast delivery');
+            $carrier->delay[$lang['id_lang']] = $this->l('24 hours delivery');
 
-        if ($carrier->add() == true)
-        {
-            @copy(dirname(__FILE__).'/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_.'/'.(int)$carrier->id.'.jpg');
-            Configuration::updateValue('MYSHIPPINGMODULE_CARRIER_ID', (int)$carrier->id);
+        if ($carrier->add() == true) {
+            @copy(dirname(__FILE__) . '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/' . (int) $carrier->id . '.jpg');
+            Configuration::updateValue('MYSHIPPINGMODULE_CARRIER_ID', (int) $carrier->id);
             return $carrier;
         }
 
@@ -287,20 +290,19 @@ class Moova extends CarrierModule
 
     protected function addZones($carrier)
     {
-        $zones = Zone::getZones();
-
-        foreach ($zones as $zone)
-            $carrier->addZone($zone['id_zone']);
+        //$zones = Zone::getZones();
+        $SOUTH_AMERICA=6;
+        $carrier->addZone($SOUTH_AMERICA);
     }
 
     /**
-    * Add the CSS & JavaScript files you want to be loaded in the BO.
-    */
+     * Add the CSS & JavaScript files you want to be loaded in the BO.
+     */
     public function hookBackOfficeHeader()
     {
         if (Tools::getValue('module_name') == $this->name) {
-            $this->context->controller->addJS($this->_path.'views/js/back.js');
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
+            $this->context->controller->addJS($this->_path . 'views/js/back.js');
+            $this->context->controller->addCSS($this->_path . 'views/css/back.css');
         }
     }
 
@@ -309,8 +311,8 @@ class Moova extends CarrierModule
      */
     public function hookHeader()
     {
-        $this->context->controller->addJS($this->_path.'/views/js/front.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        $this->context->controller->addJS($this->_path . '/views/js/front.js');
+        $this->context->controller->addCSS($this->_path . '/views/css/front.css');
     }
 
     public function hookUpdateCarrier($params)
@@ -318,7 +320,7 @@ class Moova extends CarrierModule
         /**
          * Not needed since 1.5
          * You can identify the carrier by the id_reference
-        */
+         */
     }
 
     public function hookActionCarrierUpdate()
