@@ -1,9 +1,6 @@
 <?php
-
-namespace Ecomerciar\Moova\Sdk;
-
-use Ecomerciar\Moova\Api\MoovaApi;
-use Ecomerciar\Moova\Helper\Helper;
+ 
+include_once(_PS_MODULE_DIR_ . '/Moova/Api/MoovaApi.php');
 
 class MoovaSdk
 {
@@ -11,9 +8,9 @@ class MoovaSdk
     public function __construct()
     {
         $this->api = new MoovaApi(
-            Helper::get_option('clientid', ''),
-            Helper::get_option('clientsecret', ''),
-            Helper::get_option('environment', 'test')
+            Configuration::get('MOOVA_APP_ID', ''),
+            Configuration::get('MOOVA_APP_KEY', ''),
+            Configuration::get('MOOVA_LIVE_MODE', false)
         );
     }
 
@@ -25,9 +22,9 @@ class MoovaSdk
      * @param array $items
      * @return array|false
      */
-    public function getPrice(array $from, array $to, array $items)
+    public function getPrice($to,$items)
     {
-        $data_to_send = [
+        $payload = [
             'from' => [
                 'street' => $from['street'],
                 'number' => $from['number'],
@@ -37,46 +34,44 @@ class MoovaSdk
                 'state' => $from['state'],
                 'postalCode' => $from['postalCode'],
                 'country' => 'AR',
+                  'required' => true
             ],
             'to' => [
-                'street' => $to['street'],
-                'number' => $to['number'],
-                'floor' => $to['floor'],
-                'apartment' => $to['apartment'],
-                'city' => $to['locality'],
-                'state' => $to['province'],
-                'postalCode' => $to['cp'],
-                'country' => 'AR',
+                'street' => $to->address1,
+                'floor' => $to->address2,
+                'city' => $to->city,
+                'state' => $to->province,
+                'postalCode' => $to->postcode,
+                'country' => $to->country,
             ],
             'conf' => [
                 'assurance' => false,
-                'items' => []
+                'items' => $this->getItems($items)
             ],
-            'size_id' => 1,
-            'type' => 'woocommerce_24_horas_max'
-        ];
-        foreach ($items as $item) {
-            $data_to_send['conf']['items'][] = ['item' => $item];
-        }
-        if (empty($data_to_send['to']['street']) && !empty($data_to_send['to']['postalCode'])) {
-            unset($data_to_send['to']['street']);
-            unset($data_to_send['to']['number']);
-            unset($data_to_send['to']['floor']);
-            unset($data_to_send['to']['apartment']);
-            $res = $this->api->post('/budgets/estimate', $data_to_send);
-        } else {
-            $res = $this->api->post('/v2/budgets', $data_to_send);
-        }
-        if (Helper::get_option('debug')) {
-            Helper::log_debug(__FUNCTION__ . ' - Data enviada a Moova: ' . json_encode($data_to_send));
-            Helper::log_debug(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-        }
+            'type' => 'prestashop_24_horas_max'
+        ]; 
+        
+        $res = $this->api->post('/v2/budgets', $payload);  
+        throw new Error(json_encode($res));
         if (!$res || empty($res['budget_id'])) {
             return false;
         }
-        return $res;
+        
+        return $res["price"];
     }
 
+    private function getItems($items){
+        $formated = [];
+        foreach ($items as $item) {
+            $formated=[
+                "name"=>$item["name"],
+                "price"=>$item["price"],
+                "weight"=>$item["weight"],
+                "quantity"=>$item["quantity"]
+            ];
+        }
+        return $formated;
+    }
 
     /**
      * Process an order in Moova's Api

@@ -1,7 +1,4 @@
 <?php
-
-namespace Moova\Api;
-
 interface ApiInterface
 {
     public function get(string $endpoint, array $body = [], array $headers = []);

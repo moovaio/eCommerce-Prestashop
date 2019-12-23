@@ -24,11 +24,15 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  *  International Registered Trademark & Property of PrestaShop SA
  */
+ 
 
 if (!defined('_PS_VERSION_')) {
     exit;
-}
-use Moova\Api;
+} 
+
+include_once(_PS_MODULE_DIR_ . '/Moova/sdk/MoovaSdk.php');
+
+
 class Moova extends CarrierModule
 {
     protected $config_form = false;
@@ -40,6 +44,7 @@ class Moova extends CarrierModule
         $this->version = '1.0.0';
         $this->author = 'Moova.io';
         $this->need_instance = 0;
+        $this->moova = new MoovaSdk();
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -134,7 +139,7 @@ class Moova extends CarrierModule
             'id_language' => $this->context->language->id,
         );
 
-        return $helper->generateForm(array($this->getConfigForm()));
+        return $helper->generateForm([$this->getConfigForm(),$this->getOriginForm()]);
     }
 
     /**
@@ -174,13 +179,133 @@ class Moova extends CarrierModule
                         'desc' => $this->l('Enter the app id'),
                         'name' => 'MOOVA_APP_ID',
                         'label' => $this->l('App id'),
+                        'required' => true
                     ), 
                     array(
-                        'type' => 'password',
+                        'col' => 3,
+                        'type' => 'text',
                         'name' => 'MOOVA_APP_KEY',
                         'label' => $this->l('App key'),
                         'desc' => $this->l('Enter the app key'),
+                        'required' => true
                     ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                ),
+            ),
+        );
+    }
+
+
+    /**
+     * Get address config
+     */
+    protected function getOriginForm()
+    {
+        return array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->l('Origin address'),
+                    'icon' => 'icon-home',
+                ),
+ 
+                'input' => array(
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Name'),
+                        'name' => 'MOOVA_ORIGIN_NAME',
+                        'label' => $this->l('Name'),
+                        'required' => true
+                    ), 
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Surname'),
+                        'name' => 'MOOVA_ORIGIN_SURNAME',
+                        'label' => $this->l('Surname'),
+                        'required' => false
+                    ), 
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('email'),
+                        'name' => 'MOOVA_ORIGIN_EMAIL',
+                        'label' => $this->l('Email'),
+                        'required' => false
+                    ), 
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('phone'),
+                        'name' => 'MOOVA_ORIGIN_PHONE',
+                        'label' => $this->l('Phone'),
+                        'required' => false
+                    ), 
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Street'),
+                        'name' => 'MOOVA_ORIGIN_STREET',
+                        'label' => $this->l('Street'),
+                        'required' => true
+                    ), 
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Number'),
+                        'name' => 'MOOVA_ORIGIN_NUMBER',
+                        'label' => $this->l('Number'),
+                        'required' => true
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Floor'),
+                        'name' => 'MOOVA_ORIGIN_FLOOR',
+                        'label' => $this->l('Floor'),
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Apartment'),
+                        'name' => 'MOOVA_ORIGIN_APARTMENT',
+                        'label' => $this->l('Apartment'),
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('City'),
+                        'name' => 'MOOVA_ORIGIN_CITY',
+                        'label' => $this->l('City'),
+                        'required' => true
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('State'),
+                        'name' => 'MOOVA_ORIGIN_STATE',
+                        'label' => $this->l('State'),
+                        'required' => true
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Postal code'),
+                        'name' => 'MOOVA_ORIGIN_POSTAL_CODE',
+                        'label' => $this->l('Postal Code'),
+                        'required' => true
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text', 
+                        'desc' => $this->l('Special observation. Example: red door'),
+                        'name' => 'MOOVA_ORIGIN_COMMENT',
+                        'label' => $this->l('Description'),
+                        'required' => true
+                    ),
+                    
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -196,9 +321,23 @@ class Moova extends CarrierModule
     {
         return array(
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            'MOOVA_APP_ID' => Configuration::get('APP_ID', ''),
+            'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
-            
+
+            'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
+            'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
+            'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
+            'MOOVA_ORIGIN_EMAIL' => Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
+            'MOOVA_ORIGIN_COMMENT' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
+            'MOOVA_ORIGIN_STREET' => Configuration::get('MOOVA_ORIGIN_STREET', ''),
+            'MOOVA_ORIGIN_NUMBER' => Configuration::get('MOOVA_ORIGIN_NUMBER', ''),
+            'MOOVA_ORIGIN_FLOOR' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
+            'MOOVA_ORIGIN_APARTMENT' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
+            'MOOVA_ORIGIN_CITY'=> Configuration::get('MOOVA_ORIGIN_CITY', ''),
+            'MOOVA_ORIGIN_STATE'=> Configuration::get('MOOVA_ORIGIN_STATE', ''),
+            'MOOVA_ORIGIN_POSTAL_CODE'=> Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
+            'MOOVA_ORIGIN_COUNTRY'=> Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
+
         );
     }
 
@@ -218,16 +357,22 @@ class Moova extends CarrierModule
     {
         if (Context::getContext()->customer->logged == true) {
             $id_address_delivery = Context::getContext()->cart->id_address_delivery;
-            $address = new Address($id_address_delivery);
+            $destination = new Address($id_address_delivery);
+            $products = Context::getContext()->cart->getProducts(true); 
+            $price = $this->moova->getPrice($destination,$products);
 
-            /**
-             * Send the details through the API
-             * Return the price sent by the API
-             */
-            return ;
+            return 99;
         }
 
         return $shipping_cost;
+
+
+        /*try{
+
+        }catch(Exception $e){
+            return false;
+        }*/
+        
     }
 
     public function getOrderShippingCostExternal($params)

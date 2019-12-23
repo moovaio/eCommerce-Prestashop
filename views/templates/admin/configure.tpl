@@ -25,11 +25,12 @@
 
 <div class="panel">
 	<h3><i class="icon icon-truck"></i> {l s='Moova Configuration' mod='Moova'}</h3>
-	<img src="{$module_dir|escape:'html':'UTF-8'}/logo.png" id="payment-logo" class="pull-right" />
+	<img src="{$module_dir|escape:'html':'UTF-8'}/logo.png" id="payment-logo" class="pull-right"  style='    height: 90px;' />
 	<p>
 		<strong>{l s='Moova shipping' mod='Moova'}</strong><br />
-		{l s='This module will take care of all the shippings for yoy' mod='Moova'}<br />
-		{l s='More information on the documentation' mod='Moova'}
+		{l s='This Moova extension allows you to display real-time shipping quotes to your customers based on their cart details and shipping address' mod='Moova'}<br />
+		{l s='We produce shipping labels that can be downloaded both from this extension or on the website.' mod='Moova'}<br />
+		{l s='		Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at every time.' mod='Moova'}
 	</p>
 	<br /> 
 </div>
@@ -40,7 +41,6 @@
 		&raquo; {l s='You can get a PDF documentation to configure this module' mod='Moova'} :
 		<ul>
 			<li><a href="#" target="_blank">{l s='English' mod='Moova'}</a></li>
-			<li><a href="#" target="_blank">{l s='French' mod='Moova'}</a></li>
 		</ul>
 	</p>
 </div>
