@@ -1,5 +1,5 @@
 <?php
- 
+
 include_once(_PS_MODULE_DIR_ . '/Moova/Api/MoovaApi.php');
 
 class MoovaSdk
@@ -22,52 +22,55 @@ class MoovaSdk
      * @param array $items
      * @return array|false
      */
-    public function getPrice($to,$items)
+    public function getPrice($to, $items)
     {
+        $street = $this->getAddress($to->address1);
         $payload = [
             'from' => [
-                'street' => $from['street'],
-                'number' => $from['number'],
-                'floor' => $from['floor'],
-                'apartment' => $from['apartment'],
-                'city' => $from['city'],
-                'state' => $from['state'],
-                'postalCode' => $from['postalCode'],
-                'country' => 'AR',
-                  'required' => true
+                'street' => Configuration::get('MOOVA_ORIGIN_STREET', ''),
+                'number' => Configuration::get('MOOVA_ORIGIN_NUMBER', ''),
+                'floor' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
+                'apartment' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
+                'city' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
+                'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
+                'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
+                'country' => Configuration::get('MOOVA_ORIGIN_COUNTRY')
             ],
             'to' => [
-                'street' => $to->address1,
+                'street' => $street['street'],
+                'number' => $street['number'],
                 'floor' => $to->address2,
                 'city' => $to->city,
-                'state' => $to->province,
+                'state' => $to->state,
                 'postalCode' => $to->postcode,
                 'country' => $to->country,
             ],
+            'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
-                'items' => $this->getItems($items)
+                'items' => $this->getItems($items) //TODO FIX HEIGHT AND OTHER SHIT
             ],
             'type' => 'prestashop_24_horas_max'
-        ]; 
-        
-        $res = $this->api->post('/v2/budgets', $payload);  
-        throw new Error(json_encode($res));
-        if (!$res || empty($res['budget_id'])) {
+        ];
+
+        $res = $this->api->post('/v2/budgets', $payload);
+
+        if (!$res || !isset($res->budget_id)) {
             return false;
         }
-        
-        return $res["price"];
+
+        return $res->price;
     }
 
-    private function getItems($items){
+    private function getItems($items)
+    {
         $formated = [];
         foreach ($items as $item) {
-            $formated=[
-                "name"=>$item["name"],
-                "price"=>$item["price"],
-                "weight"=>$item["weight"],
-                "quantity"=>$item["quantity"]
+            $formated = [
+                "name" => $item["name"],
+                "price" => $item["price"],
+                "weight" => $item["weight"],
+                "quantity" => $item["quantity"]
             ];
         }
         return $formated;
@@ -80,6 +83,7 @@ class MoovaSdk
      */
     public function processOrder(\WC_Order $order)
     {
+
         $seller = Helper::get_seller_from_settings();
         $customer = Helper::get_customer_from_order($order);
         $items = Helper::get_items_from_order($order);
@@ -231,5 +235,19 @@ class MoovaSdk
             return false;
         }
         return $res;
+    }
+
+    public static function getAddress($fullStreet)
+    {
+        //Now let's work on the first line
+        preg_match('/(^\d*[\D]*)(\d+)(.*)/i', $fullStreet, $res);
+        $line1 = $res;
+
+        if ((isset($line1[1]) && !empty($line1[1]) && $line1[1] !== " ") && !empty($line1)) {
+            //everything's fine. Go ahead 
+            $street_name = trim($line1[1]);
+            $street_number = trim($line1[2]);
+        }
+        return array('street' => $street_name, 'number' => $street_number);
     }
 }
