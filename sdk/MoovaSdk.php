@@ -24,8 +24,19 @@ class MoovaSdk
      */
     public function getPrice($to, $items)
     {
+        $payload =  $this->getOrderModel($to, $items);
+        $res = $this->api->post('/v2/budgets', $payload);
+        if (!$res || !isset($res->budget_id)) {
+            return false;
+        }
+
+        return $res->price;
+    }
+
+    private function getOrderModel($to, $items)
+    {
         $street = $this->getAddress($to->address1);
-        $payload = [
+        return [
             'from' => [
                 'street' => Configuration::get('MOOVA_ORIGIN_STREET', ''),
                 'number' => Configuration::get('MOOVA_ORIGIN_NUMBER', ''),
@@ -34,7 +45,8 @@ class MoovaSdk
                 'city' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
                 'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
                 'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
-                'country' => Configuration::get('MOOVA_ORIGIN_COUNTRY')
+                'country' => Configuration::get('MOOVA_ORIGIN_COUNTRY'),
+                'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', '')
             ],
             'to' => [
                 'street' => $street['street'],
@@ -44,23 +56,18 @@ class MoovaSdk
                 'state' => $to->state,
                 'postalCode' => $to->postcode,
                 'country' => $to->country,
+                'instructions' => ''
             ],
             'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
                 'items' => $this->getItems($items) //TODO FIX HEIGHT AND OTHER SHIT
             ],
-            'type' => 'prestashop_24_horas_max'
+            'type' => 'prestashop_24_horas_max',
+            'flow' => 'manual',
         ];
-
-        $res = $this->api->post('/v2/budgets', $payload);
-
-        if (!$res || !isset($res->budget_id)) {
-            return false;
-        }
-
-        return $res->price;
     }
+
 
     private function getItems($items)
     {
@@ -81,64 +88,11 @@ class MoovaSdk
      *
      * @return array|false
      */
-    public function processOrder(\WC_Order $order)
+    public function processOrder($to, $items)
     {
-
-        $seller = Helper::get_seller_from_settings();
-        $customer = Helper::get_customer_from_order($order);
-        $items = Helper::get_items_from_order($order);
-        $data_to_send = [
-            'scheduledDate' => null,
-            'currency' => 'ARS',
-            'type' => 'regular',
-            'flow' => 'manual',
-            'from' => [
-                'street' => $seller['street'],
-                'number' => $seller['number'],
-                'floor' => $seller['floor'],
-                'apartment' => $seller['apartment'],
-                'city' => $seller['city'],
-                'state' => $seller['state'],
-                'postalCode' => $seller['postalCode'],
-                'country' => 'AR',
-                'instructions' => $seller['instructions']
-            ],
-            'to' => [
-                'street' => $customer['street'],
-                'number' => $customer['number'],
-                'floor' => $customer['floor'],
-                'apartment' => $customer['apartment'],
-                'city' => $customer['locality'],
-                'state' => $customer['province'],
-                'postalCode' => $customer['cp'],
-                'country' => 'AR',
-                'instructions' => $customer['extra_info']
-            ],
-            'conf' => [
-                'assurance' => false,
-                'items' => []
-            ],
-            'internalCode' => $order->get_id(),
-            'description' => 'Pedido número ' . $order->get_id(),
-            'label' => '',
-            'type' => 'woocommerce_24_horas_max',
-            'extra' => []
-        ];
-        $grouped_items = Helper::group_items($items);
-        foreach ($grouped_items as $item) {
-            $data_to_send['conf']['items'][] = ['item' => $item];
-        }
-        $res = $this->api->post('/shippings', $data_to_send);
-        if (Helper::get_option('debug')) {
-            Helper::log_debug(__FUNCTION__ . ' - Data enviada a Moova: ' . json_encode($data_to_send));
-            Helper::log_debug(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-        }
-        if (empty($res['id'])) {
-            Helper::log_error('No se pudo procesar el pedido.');
-            Helper::log_error(__FUNCTION__ . ' - Data enviada a Moova: ' . json_encode($data_to_send));
-            Helper::log_error(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-            return false;
-        }
+        $payload =  $this->getOrderModel($to, $items);
+        $payload['internalCode'] = $to['internalCode'];
+        $res = $this->api->post('/shippings', $payload);
         return $res;
     }
 

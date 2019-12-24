@@ -81,17 +81,64 @@ class Moova extends CarrierModule
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
-            $this->registerHook('updateCarrier') &&
-            $this->registerHook('actionCarrierUpdate') &&
-            $this->registerHook('actionOrderStatusUpdate') &&
-            $this->registerHook('actionValidateOrder') &&
-            $this->registerHook('displayAdminOrderContentOrder');
+            $this->registerHook('displayAdminOrderContentShip') &&
+            $this->registerHook('displayAdminOrderRight');
+    }
+
+    public function addOrderState($name)
+    {
+        $state_exist = false;
+        $states = OrderState::getOrderStates((int) $this->context->language->id);
+
+        // check if order state exist
+        foreach ($states as $state) {
+            if (in_array($name, $state)) {
+                $state_exist = true;
+                break;
+            }
+        }
+
+        // If the state does not exist, we create it.
+        if (!$state_exist) {
+            // create new order state
+            $order_state = new OrderState();
+            $order_state->color = '#00ffff';
+            $order_state->send_email = true;
+            $order_state->module_name = 'name if your module';
+            $order_state->template = 'name of your email template';
+            $order_state->name = array();
+            $languages = Language::getLanguages(false);
+            foreach ($languages as $language)
+                $order_state->name[$language['id_lang']] = $name;
+
+            // Update object
+            $order_state->add();
+        }
+
+        return true;
+    }
+
+    /**
+     * displayAdminOrderRight
+     */
+    public function hookDisplayAdminOrderRight($param)
+    {
+
+        //If create shipping
+        //Get everything i need
+        //Send it
+        $this->context->controller->addJquery();
+        Media::addJsDef(["Moova" => [
+            "url" => "moova.io",
+            "payloadCreate" => "asd"
+        ]]);
+        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
+        return $output;
     }
 
     public function uninstall()
     {
         Configuration::deleteByName('MOOVA_LIVE_MODE');
-
         return parent::uninstall();
     }
 
@@ -378,15 +425,7 @@ class Moova extends CarrierModule
         try {
             if (Context::getContext()->customer->logged == true) {
 
-                $id_address_delivery = Context::getContext()->cart->id_address_delivery;
-                $destination = new Address($id_address_delivery);
-                $country = new Country($destination->id_country);
-                $currency = new Currency(Context::getContext()->cart->id_currency);
-                $state = new State($destination->id_state);
-
-                $destination->country = $country->iso_code;
-                $destination->currency = $currency->iso_code;
-                $destination->state = $state->name;
+                $destination = $this->getDestination();
                 $products = Context::getContext()->cart->getProducts(true);
                 $price = $this->moova->getPrice(
                     $destination,
@@ -402,6 +441,38 @@ class Moova extends CarrierModule
         }
     }
 
+    private function getDestination()
+    {
+        $id_address_delivery = Context::getContext()->cart->id_address_delivery;
+        $destination = new Address($id_address_delivery);
+        $country = new Country($destination->id_country);
+        $currency = new Currency(Context::getContext()->cart->id_currency);
+        $state = new State($destination->id_state);
+
+        $destination->country = $country->iso_code;
+        $destination->currency = $currency->iso_code;
+        $destination->state = $state->name;
+        return $destination;
+    }
+
+
+    public function processOrder()
+    {
+        $id_order = Tools::getValue('id_order');
+        $order = new Order($id_order);
+
+        return json_encode($order->getProducts());
+
+        $destination = $this->getDestination();
+
+        $products = Context::getContext()->cart->getProducts(true);
+        $destination['internalCode'] = Tools::getValue('reference');
+        $order = $this->moova->processOrder(
+            $destination,
+            $products
+        );
+        return json_encode($order);
+    }
 
     public function getOrderShippingCostExternal($params)
     {
@@ -473,46 +544,10 @@ class Moova extends CarrierModule
      */
     public function hookBackOfficeHeader()
     {
-        if (Tools::getValue('module_name') == $this->name) {
+        if (Tools::getValue('controller') == 'AdminOrders') {
+            $this->context->controller->addJquery();
             $this->context->controller->addJS($this->_path . 'views/js/back.js');
             $this->context->controller->addCSS($this->_path . 'views/css/back.css');
         }
-    }
-
-    /**
-     * Add the CSS & JavaScript files you want to be added on the FO.
-     */
-    public function hookHeader()
-    {
-        $this->context->controller->addJS($this->_path . '/views/js/front.js');
-        $this->context->controller->addCSS($this->_path . '/views/css/front.css');
-    }
-
-    public function hookUpdateCarrier($params)
-    {
-        /**
-         * Not needed since 1.5
-         * You can identify the carrier by the id_reference
-         */
-    }
-
-    public function hookActionCarrierUpdate()
-    {
-        /* Place your code here. */
-    }
-
-    public function hookActionOrderStatusUpdate()
-    {
-        /* Place your code here. */
-    }
-
-    public function hookActionValidateOrder()
-    {
-        /* Place your code here. */
-    }
-
-    public function hookDisplayAdminOrderContentOrder()
-    {
-        /* Place your code here. */
     }
 }
