@@ -29,7 +29,6 @@ $sql = array();
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'moova_status` (
                                 `id_moova` int(11) unsigned NOT NULL AUTO_INCREMENT,
                                  PRIMARY KEY(`id_moova`),
-                                `id_product` INT( 11 ) UNSIGNED NOT NULL, 
                                 `date`    Date NOT NULL,
                                 `status`   VARCHAR(500) NOT NULL,
                                 `shipping_id` VARCHAR(500) NOT NULL

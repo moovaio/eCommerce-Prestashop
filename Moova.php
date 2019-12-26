@@ -77,8 +77,8 @@ class Moova extends CarrierModule
 
         require_once(dirname(__FILE__) . '/sql/install.php');
 
-        //Configuration::updateValue('MOOVA_LIVE_MODE', false);
-        //Configuration::updateValue('MOOVA_KEY_AUTHENTICATION', '');
+        Configuration::updateValue('MOOVA_LIVE_MODE', false);
+        Configuration::updateValue('MOOVA_KEY_AUTHENTICATION',  $this->randKey(40));
         return parent::install() &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
@@ -244,7 +244,17 @@ class Moova extends CarrierModule
                         'label' => $this->l('App key'),
                         'desc' => $this->l('Enter the app key'),
                         'required' => true
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text',
+                        'name' => 'MOOVA_KEY_AUTHENTICATION',
+                        'label' => $this->l('App authentication'),
+                        'desc' => $this->l('Save this key and put it in Moova.io'),
+                        'required' => true
                     )
+
+
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -398,7 +408,7 @@ class Moova extends CarrierModule
     {
         return array(
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            //'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
+            'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
             'MOOVA_ORIGIN_COUNTRY' => Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
