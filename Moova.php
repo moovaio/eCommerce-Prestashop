@@ -45,6 +45,7 @@ class Moova extends CarrierModule
         $this->author = 'Moova.io';
         $this->need_instance = 0;
         $this->moova = new MoovaSdk();
+        $this->controllers = array('dpage');
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -74,12 +75,12 @@ class Moova extends CarrierModule
         $this->addGroups($carrier);
         $this->addRanges($carrier);
 
+        require_once(dirname(__FILE__) . '/sql/install.php');
 
-
-        Configuration::updateValue('MOOVA_LIVE_MODE', false);
-
+        //Configuration::updateValue('MOOVA_LIVE_MODE', false);
+        //Configuration::updateValue('MOOVA_KEY_AUTHENTICATION', '');
         return parent::install() &&
-            $this->registerHook('moduleRoutes') &&
+            $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
             $this->registerHook('displayAdminOrderContentShip') &&
@@ -397,6 +398,7 @@ class Moova extends CarrierModule
     {
         return array(
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
+            //'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
             'MOOVA_ORIGIN_COUNTRY' => Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
@@ -416,6 +418,14 @@ class Moova extends CarrierModule
         );
     }
 
+    function randKey($length)
+    {
+        $random = '';
+        for ($i = 0; $i < $length; $i++) {
+            $random .= chr(mt_rand(33, 126));
+        }
+        return $random;
+    }
     /**
      * Save form data.
      */
@@ -583,19 +593,20 @@ class Moova extends CarrierModule
         }
     }
 
-
     public function hookModuleRoutes()
     {
-        return [
-            'module-restapimodule-login' => [
-                'rule' => 'restapimodule/login',
-                'keywords' => [],
+        return array(
+            'module-Moova-login' => array(
                 'controller' => 'login',
-                'params' => [
+                'rule' =>  'moova/webhook',
+                'keywords' => array(
+                    'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
+                ),
+                'params' => array(
                     'fc' => 'module',
-                    'module' => 'restapimodule'
-                ]
-            ]
-        ];
+                    'module' => 'Moova',
+                )
+            )
+        );
     }
 }

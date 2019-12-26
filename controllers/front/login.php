@@ -1,41 +1,37 @@
 <?php
-require_once __DIR__ . '/../AbstractRestController.php';
 
-class RestApiModuleLoginModuleFrontController extends AbstractRestController
+class MoovaLoginModuleFrontController extends ModuleFrontController
 {
-    protected function processGetRequest()
+    public function initContent()
     {
-        // do something then output the result
-        $this->ajaxDie(json_encode([
-            'success' => true,
-            'operation' => 'get'
-        ]));
+        return  $this->setTemplate('module:MOOVA/views/templates/dpage.tpl');
     }
 
-    protected function processPostRequest()
+    public function postProcess()
     {
-        // do something then output the result
-        $this->ajaxDie(json_encode([
-            'success' => true,
-            'operation' => 'post'
-        ]));
-    }
+        $this->ajaxDie(
+            json_encode([
+                'asd' =>  'asd'
+            ])
+        );
+        /*
+        $headers = getallheaders();
+        
+        if ($headers['Authorization'] = Configuration::get('MOOVA_KEY_AUTHENTICATION') {
+            $this->ajaxDie(
+                json_encode([
+                    'Error' => 'Unathorized'
+                ])
+            );
+        }
+        */
 
-    protected function processPutRequest()
-    {
-        // do something then output the result
-        $this->ajaxDie(json_encode([
-            'success' => true,
-            'operation' => 'put'
-        ]));
-    }
+        $data = json_decode(file_get_contents('php://input'), true);
 
-    protected function processDeleteRequest()
-    {
-        // do something then output the result
-        $this->ajaxDie(json_encode([
-            'success' => true,
-            'operation' => 'delete'
-        ]));
+        $this->ajaxDie(
+            json_encode([
+                'asd' =>  'asd'
+            ])
+        );
     }
 }
