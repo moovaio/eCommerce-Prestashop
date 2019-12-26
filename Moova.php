@@ -128,10 +128,18 @@ class Moova extends CarrierModule
         //Get everything i need
         //Send it
         $this->context->controller->addJquery();
+
+        $order = Order::getOrderByCartId(Context::getContext()->cart->id);
+        $carrier = $this->getCarrier($order);
+        $trackingNumber = $carrier ? $carrier['tracking_number'] : false;
+
         Media::addJsDef(["Moova" => [
-            "url" => "moova.io",
-            "payloadCreate" => "asd"
+            "trackingNumber" => $trackingNumber
         ]]);
+
+        $this->context->smarty->assign('trackingNumber', $trackingNumber);
+        $this->context->smarty->assign('status', 'READY');
+
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
     }
@@ -155,7 +163,6 @@ class Moova extends CarrierModule
         }
 
         $this->context->smarty->assign('module_dir', $this->_path);
-
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
         return $output . $this->renderForm();
@@ -456,21 +463,23 @@ class Moova extends CarrierModule
     }
 
 
-    public function processOrder()
+    public function processOrder($order)
     {
-        $id_order = Tools::getValue('id_order');
-        $order = new Order($id_order);
-
-        return json_encode($order->getProducts());
-
+        $order = new Order($order);
+        $products = $order->getProducts();
         $destination = $this->getDestination();
 
-        $products = Context::getContext()->cart->getProducts(true);
-        $destination['internalCode'] = Tools::getValue('reference');
+        $carrier = $order->getIdOrderCarrier();
+        $destination->internalCode = $order->reference;
+
         $order = $this->moova->processOrder(
             $destination,
             $products
         );
+
+        $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$order->id' WHERE id_order_carrier=$carrier";
+        Db::getInstance()->execute($sql);
+
         return json_encode($order);
     }
 
@@ -485,8 +494,7 @@ class Moova extends CarrierModule
 
         $carrier->name = $this->l('Moova');
         $carrier->is_module = true;
-        // $carrier->url = 'https://api-dev.moova.io/exgernal=?';
-        // $carrier->shipping_handling = 9;
+        $carrier->url = 'https://dashboard.moova.io/external?id=@';
         $carrier->active = 1;
         $carrier->range_behavior = 1;
         $carrier->need_range = 1;
@@ -539,6 +547,29 @@ class Moova extends CarrierModule
         $carrier->addZone($SOUTH_AMERICA);
     }
 
+    public function updateOrderStatus($order, $status, $reason)
+    {
+        $carrier = $this->getCarrier($order);
+        $this->moova->updateOrderStatus($carrier->tracking_number, $status, $reason);
+    }
+
+    public function getShippingLabel($trackingNumber)
+    {
+        return json_encode($this->moova->getShippingLabel($trackingNumber));
+    }
+
+    private function getCarrier($order)
+    {
+        try {
+            $order = new Order($order);
+            $carrier = $order->getIdOrderCarrier();
+            $sql = "SELECT * FROM " . _DB_PREFIX_ . "order_carrier WHERE id_order_carrier=$carrier";
+            $carrier = Db::getInstance()->ExecuteS($sql);
+            return $carrier[0];
+        } catch (Exception $e) {
+            return false;
+        }
+    }
     /**
      * Add the CSS & JavaScript files you want to be loaded in the BO.
      */

@@ -27,32 +27,67 @@
  */
 
 $(document).ready(function() {
-  $.ajax({
-    type: "GET",
-    url: baseDir + "modules/moova/Api/ajax.php",
-    headers: { "cache-control": "no-cache" },
-    async: true,
-    cache: false,
-    data: "action=processOrder",
-    success: function(data) {
-      console.log(data);
-    }
-  });
-  /*
-  $("#moova_create_shipping").click(function() {
+  function moovaCreateShipping() {
     $.ajax({
-      type: "POST",
-      url: baseDir + "modules/MOOVA/Moova.php",
-      data: {
-        ajax: true,
-        controller: "rock",
-        action: "getBar", // prestashop already set camel case before execute method
-        token: token
-      },
-      dataType: "json",
-      success: function(json) {
-        // ....
+      type: "GET",
+      url: baseDir + "modules/moova/Api/ajax.php",
+      headers: { "cache-control": "no-cache" },
+      async: true,
+      cache: false,
+
+      data: "action=processOrder&order=" + id_order,
+      success: function(data) {
+        window.location.reload(false);
       }
     });
-  });*/
+  }
+
+  function moovaGetLabel() {
+    $.ajax({
+      type: "GET",
+      url: baseDir + "modules/moova/Api/ajax.php",
+      headers: { "cache-control": "no-cache" },
+      async: true,
+      cache: false,
+      dataType: "json",
+      data: {
+        action: "getLabel",
+        trackingNumber: Moova.trackingNumber
+      },
+      success: function(data) {
+        window.open(data.label, "_blank");
+      }
+    });
+  }
+
+  function moovaInformReady() {
+    $.ajax({
+      type: "GET",
+      url: baseDir + "modules/moova/Api/ajax.php",
+      headers: { "cache-control": "no-cache" },
+      async: true,
+      cache: false,
+      data: {
+        action: "updateOrderStatus",
+        order: id_order,
+        status: "READY",
+        reason: ""
+      },
+      success: function(data) {
+        window.location.reload(false);
+      }
+    });
+  }
+
+  $("#moova_create_shipping").click(function() {
+    moovaCreateShipping();
+  });
+
+  $("#moova_inform_ready").click(function() {
+    moovaInformReady();
+  });
+
+  $("#moova_get_label").click(function() {
+    moovaGetLabel();
+  });
 });

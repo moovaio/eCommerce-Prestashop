@@ -61,7 +61,7 @@ class MoovaSdk
             'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
-                'items' => $this->getItems($items) //TODO FIX HEIGHT AND OTHER SHIT
+                'items' => $this->getItems($items)
             ],
             'type' => 'prestashop_24_horas_max',
             'flow' => 'manual',
@@ -73,11 +73,15 @@ class MoovaSdk
     {
         $formated = [];
         foreach ($items as $item) {
+            $prefix = isset($item["name"]) ? '' : 'product_';
             $formated = [
-                "name" => $item["name"],
-                "price" => $item["price"],
-                "weight" => $item["weight"],
-                "quantity" => $item["quantity"]
+                "name" => $item[$prefix . 'name'],
+                "price" =>  $item[$prefix . "price"],
+                "weight" =>  $item["weight"],
+                "length" =>  $item["depth"],
+                "width" =>  $item["width"],
+                "height" =>  $item["height"],
+                "quantity" => $item[$prefix . 'quantity'],
             ];
         }
         return $formated;
@@ -91,7 +95,7 @@ class MoovaSdk
     public function processOrder($to, $items)
     {
         $payload =  $this->getOrderModel($to, $items);
-        $payload['internalCode'] = $to['internalCode'];
+        $payload['internalCode'] = $to->internalCode;
         $res = $this->api->post('/shippings', $payload);
         return $res;
     }
@@ -102,15 +106,10 @@ class MoovaSdk
      * @param string $order_id
      * @return array|false
      */
-    public function get_shipping_label(string $order_id)
+    public function getShippingLabel(string $orderId)
     {
-        $res = $this->api->get('/shippings/' . $order_id . '/label');
-        if (Helper::get_option('debug')) {
-            Helper::log_debug(__FUNCTION__ . ' - Data enviada a Moova: ' . $order_id);
-            Helper::log_debug(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-        }
-        if (empty($res['label'])) {
-            Helper::log_error('No se pudo obtener etiqueta del pedido ' . $order_id);
+        $res = $this->api->get("/shippings/$orderId/label");
+        if (!isset($res->label)) {
             return false;
         }
         return $res;
@@ -169,22 +168,19 @@ class MoovaSdk
     /**
      * Updates the order status in Moova
      *
-     * @param string $order_id
+     * @param string $orderId
      * @param string $status
      * @param string $reason
      * @return false|array
      */
-    public function update_order_status(string $order_id, string $status, string $reason = '')
+    public function updateOrderStatus(string $orderId, string $status, string $reason = '')
     {
         $data_to_send = [];
         if ($reason) {
             $data_to_send['reason'] = $reason;
         }
-        $res = $this->api->post('/shippings/' . $order_id . '/' . strtolower($status), $data_to_send);
-        if (Helper::get_option('debug')) {
-            Helper::log_debug(__FUNCTION__ . ' - Data enviada a Moova: ' . json_encode($data_to_send));
-            Helper::log_debug(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-        }
+        $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $data_to_send);
+
         if (empty($res['status']) || strtoupper($res['status']) !== strtoupper($status)) {
             return false;
         }
