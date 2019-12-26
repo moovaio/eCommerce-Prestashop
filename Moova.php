@@ -79,6 +79,7 @@ class Moova extends CarrierModule
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
 
         return parent::install() &&
+            $this->registerHook('moduleRoutes') &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
             $this->registerHook('displayAdminOrderContentShip') &&
@@ -580,5 +581,21 @@ class Moova extends CarrierModule
             $this->context->controller->addJS($this->_path . 'views/js/back.js');
             $this->context->controller->addCSS($this->_path . 'views/css/back.css');
         }
+    }
+
+
+    public function hookModuleRoutes()
+    {
+        return [
+            'module-restapimodule-login' => [
+                'rule' => 'restapimodule/login',
+                'keywords' => [],
+                'controller' => 'login',
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'restapimodule'
+                ]
+            ]
+        ];
     }
 }
