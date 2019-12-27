@@ -161,20 +161,6 @@ class Moova extends CarrierModule
         }
     }
 
-    public function hookModuleRoutes()
-    {
-        return array(
-            'module-Moova-webhook' => array(
-                'controller' => 'webhook',
-                'rule' =>  'moova/webhook',
-                'params' => array(
-                    'fc' => 'module',
-                    'module' => 'Moova',
-                )
-            )
-        );
-    }
-
     public function hookActionOrderStatusPostUpdate($params)
     {
         $params['newOrderStatus'];
@@ -628,5 +614,27 @@ class Moova extends CarrierModule
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    public function hookModuleRoutes()
+    {
+        return array(
+            'module-Moova-statusListener' => array(
+                'controller' => 'statusListener',
+                'rule' =>  'moova/statusListener',
+                'params' => array(
+                    'fc' => 'module',
+                    'module' => 'Moova',
+                )
+            ),
+            'module-Moova-login' => array(
+                'controller' => 'login',
+                'rule' =>  'moova/login',
+                'params' => array(
+                    'fc' => 'module',
+                    'module' => 'Moova',
+                )
+            )
+        );
     }
 }
