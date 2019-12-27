@@ -90,7 +90,13 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
         $headers = [];
         foreach ($_SERVER as $name => $value) {
             if (Tools::substr($name, 0, 5) == 'HTTP_') {
-                $headers[str_replace(' ', '-', ucwords(Tools::strtolower(str_replace('_', ' ', Tools::substr($name, 5)))))] = $value;
+                $headers[str_replace(
+                    ' ',
+                    '-',
+                    ucwords(Tools::strtolower(
+                        str_replace('_', ' ', Tools::substr($name, 5))
+                    ))
+                )] = $value;
             }
         }
         return $headers;

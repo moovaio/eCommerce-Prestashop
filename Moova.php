@@ -50,13 +50,8 @@ class Moova extends CarrierModule
         $this->bootstrap = true;
 
         parent::__construct();
-        $this->displayName = $this->l('Moova');
-        $description = 'This Moova extension allows you to display real-time shipping quotes'
-        . ' to your customers based on their cart details and shipping address.' .
-        ' We produce shipping labels that can be downloaded both from this extension or on the website.' .
-        ' Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at ' .
-        'every time.';
-        $this->description = $this->l($description);
+        $this->displayName = $this->l('Moova'); 
+        $this->description = $this->l('This extension allows you to create shippings with Moova');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall  Moova?');
     }
