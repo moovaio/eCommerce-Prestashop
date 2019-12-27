@@ -125,15 +125,19 @@ class MoovaSdk
      */
     public function updateOrderStatus(string $orderId, string $status, $reason = '')
     {
-        $data_to_send = [];
+        $payload = [];
         if ($reason) {
-            $data_to_send['reason'] = $reason;
+            $payload['reason'] = $reason;
         }
-        $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $data_to_send);
+        $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $payload);
         if (!isset($res->id)) {
             return false;
         }
 
+        $dateUTC = new \DateTime("now", new \DateTimeZone("UTC"));
+        $date = $dateUTC->format(DateTime::ATOM);
+        $query = "INSERT INTO `prestashop`." . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$date', 'READY')";
+        Db::getInstance()->execute($query);
         return json_encode($res);
     }
 

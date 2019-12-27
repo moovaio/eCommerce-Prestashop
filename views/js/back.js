@@ -37,7 +37,10 @@ $(document).ready(function() {
 
       data: "action=processOrder&order=" + id_order,
       success: function(data) {
-        window.location.reload(false);
+        if (!data) {
+          alert("Error creating shipment");
+        }
+        window.location.reload(true);
       }
     });
   }
@@ -55,6 +58,9 @@ $(document).ready(function() {
         trackingNumber: Moova.trackingNumber
       },
       success: function(data) {
+        if (!data) {
+          alert("Error getting label");
+        }
         window.open(data.label, "_blank");
       }
     });
@@ -74,12 +80,16 @@ $(document).ready(function() {
         reason: ""
       },
       success: function(data) {
-        //window.location.reload(false);
+        if (!data) {
+          alert("Error changing status. Please change it manually in moova.io");
+        }
+        window.location.reload(true);
       }
     });
   }
 
   $("#moova_create_shipping").click(function() {
+    $("#moova_create_shipping").attr("disabled", true);
     moovaCreateShipping();
   });
 

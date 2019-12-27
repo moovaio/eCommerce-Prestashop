@@ -1,5 +1,4 @@
 <?php
-
 /**
  * 2007-2019 PrestaShop
  *
@@ -25,13 +24,11 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
 include_once(_PS_MODULE_DIR_ . '/Moova/sdk/MoovaSdk.php');
-
 
 class Moova extends CarrierModule
 {
@@ -39,7 +36,7 @@ class Moova extends CarrierModule
 
     public function __construct()
     {
-        $this->name = 'Moova';
+        $this->name = 'moova';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
         $this->author = 'Moova.io';
@@ -166,7 +163,7 @@ class Moova extends CarrierModule
      */
     private function getStatusMoova($trackingNumber)
     {
-        $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by date desc";
+        $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by id_moova desc";
         return Db::getInstance()->ExecuteS($sql);
     }
 
@@ -446,7 +443,7 @@ class Moova extends CarrierModule
         );
     }
 
-    function randKey($length)
+    private function randKey($length)
     {
         $random = '';
         for ($i = 0; $i < $length; $i++) {
@@ -466,7 +463,7 @@ class Moova extends CarrierModule
         }
     }
 
-    public function getOrderShippingCost($params, $shipping_cost)
+    public function getOrderShippingCost()
     {
         try {
             if (Context::getContext()->customer->logged == true) {
@@ -520,11 +517,6 @@ class Moova extends CarrierModule
         Db::getInstance()->execute($sql);
 
         return json_encode($order);
-    }
-
-    public function getOrderShippingCostExternal($params)
-    {
-        return true;
     }
 
     protected function addCarrier()
