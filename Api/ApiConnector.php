@@ -23,6 +23,7 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
+
 abstract class ApiConnector
 {
     protected function exec(string $method, string $url, array $data, array $headers)

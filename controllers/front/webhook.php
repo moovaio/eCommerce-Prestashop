@@ -76,12 +76,23 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
 
     private function getOrderId($trackingNumber)
     {
-        $headers = getallheaders();
+        $headers = $this->getallheaders();
         $sql = "SELECT * FROM " . _DB_PREFIX_ . "order_carrier WHERE tracking_number='$trackingNumber'";
         $carrier = Db::getInstance()->ExecuteS($sql);
         if ($headers['Authorization'] == Configuration::get('MOOVA_KEY_AUTHENTICATION') && sizeof($carrier) > 0) {
             return $carrier[0]['id_order'];
         }
         return null;
+    }
+
+    private function getallheaders()
+    {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (Tools::substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(Tools::strtolower(str_replace('_', ' ', Tools::substr($name, 5)))))] = $value;
+            }
+        }
+        return $headers;
     }
 }

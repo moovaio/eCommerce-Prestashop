@@ -30,7 +30,7 @@
  
         {if !$trackingNumber}
         <a class="btn btn-default" id='moova_create_shipping'>
-            <i class="icon-envelope"></i> {l s='Create shipping' mod='Moova'}
+            <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
         </a>
         {/if} {if $trackingNumber} {if sizeof($status) == 0}
         <a class="btn btn-default" id='moova_inform_ready'>
@@ -59,10 +59,10 @@
                 </thead>
 
                 <tbody>
-                    {foreach $status as $pes}
+                    {foreach $status as $state}
                     <tr>
-                        <td>{$pes['status']}</td>
-                         <td>{$pes['date']}</td>
+                        <td>{$state['status']|escape:'htmlall':'UTF-8'}</td>
+                         <td>{$state['date']|escape:'htmlall':'UTF-8'}</td>
                     </tr>
                     {/foreach}
 

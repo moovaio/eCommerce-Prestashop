@@ -51,11 +51,12 @@ class Moova extends CarrierModule
 
         parent::__construct();
         $this->displayName = $this->l('Moova');
-        $this->description = $this->l('This Moova extension allows you to display real-time shipping quotes'
-            . ' to your customers based on their cart details and shipping address.' .
-            ' We produce shipping labels that can be downloaded both from this extension or on the website.' .
-            ' Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at ' .
-            'every time.');
+        $description = 'This Moova extension allows you to display real-time shipping quotes'
+        . ' to your customers based on their cart details and shipping address.' .
+        ' We produce shipping labels that can be downloaded both from this extension or on the website.' .
+        ' Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at ' .
+        'every time.';
+        $this->description = $this->l($description);
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall  Moova?');
     }
@@ -394,7 +395,7 @@ class Moova extends CarrierModule
                         'name' => 'MOOVA_ORIGIN_COUNTRY',
                         'required' => true,
                         'options' => array(
-                            'query' => $options = array(
+                            'query' => array(
                                 array(
                                     'id_option' => 'AR',
                                     'name' => 'Argentina'
@@ -484,10 +485,8 @@ class Moova extends CarrierModule
                 );
                 return $price;
             }
-
             return false;
         } catch (Exception $e) {
-            throw new Error($e);
             return false;
         }
     }
