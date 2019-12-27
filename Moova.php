@@ -140,10 +140,17 @@ class Moova extends CarrierModule
         ]]);
 
         $this->context->smarty->assign('trackingNumber', $trackingNumber);
-        $this->context->smarty->assign('status', 'READY');
+        $status = $this->getStatusMoova($trackingNumber);
 
+        $this->context->smarty->assign('status', $status);
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
+    }
+
+    private function getStatusMoova($trackingNumber)
+    {
+        $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by date desc";
+        return Db::getInstance()->ExecuteS($sql);
     }
 
     public function uninstall()
