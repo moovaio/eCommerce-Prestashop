@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-    <name>Moova</name>
+    <name>moova</name>
     <displayName><![CDATA[Moova]]></displayName>
     <version><![CDATA[1.0.0]]></version>
     <description><![CDATA[This Moova extension allows you to display real-time shipping quotes to your customers based on their cart details and shipping address. We produce shipping labels that can be downloaded both from this extension or on the website. Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at every time.]]></description>

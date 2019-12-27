@@ -48,7 +48,8 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
         }
 
 
-        $query = "INSERT INTO `prestashop`." . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$id', '$date', '$status')";
+        $query = "INSERT INTO `prestashop`." . _DB_PREFIX_ .
+            "moova_status (`shipping_id`, `date`, `status`) VALUES ('$id', '$date', '$status')";
 
         $this->changeStatus($status, $orderId);
         Db::getInstance()->execute($query);

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2019 PrestaShop
  *
@@ -51,7 +52,11 @@ class Moova extends CarrierModule
 
         parent::__construct();
         $this->displayName = $this->l('Moova');
-        $this->description = $this->l('This Moova extension allows you to display real-time shipping quotes to your customers based on their cart details and shipping address. We produce shipping labels that can be downloaded both from this extension or on the website. Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at every time.');
+        $this->description = $this->l('This Moova extension allows you to display real-time shipping quotes'
+            . ' to your customers based on their cart details and shipping address.' .
+            ' We produce shipping labels that can be downloaded both from this extension or on the website.' .
+            ' Furthermore, we give you a real-time tracking URL so you and your client can follow your shipping at ' .
+            'every time.');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall  Moova?');
     }
@@ -75,7 +80,8 @@ class Moova extends CarrierModule
         require_once(dirname(__FILE__) . '/sql/install.php');
 
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
-        Configuration::updateValue('MOOVA_KEY_AUTHENTICATION',  $this->randKey(40));
+        Configuration::updateValue('MOOVA_KEY_AUTHENTICATION', $this->randKey(40));
+
         return parent::install() &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
@@ -113,8 +119,9 @@ class Moova extends CarrierModule
             $order_state->template = 'name of your email template';
             $order_state->name = array();
             $languages = Language::getLanguages(false);
-            foreach ($languages as $language)
+            foreach ($languages as $language) {
                 $order_state->name[$language['id_lang']] = $name;
+            }
 
             // Update object
             $order_state->add();
@@ -163,7 +170,9 @@ class Moova extends CarrierModule
      */
     private function getStatusMoova($trackingNumber)
     {
-        $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by id_moova desc";
+        $sql = "SELECT * FROM "
+            . _DB_PREFIX_ .
+            "moova_status where shipping_id='$trackingNumber' order by id_moova desc";
         return Db::getInstance()->ExecuteS($sql);
     }
 
@@ -230,7 +239,8 @@ class Moova extends CarrierModule
                         'label' => $this->l('Live mode'),
                         'name' => 'MOOVA_LIVE_MODE',
                         'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode. Remember app id and key are different in production'),
+                        'desc' => $this->l('Use this module in live mode. ' .
+                            'Remember app id and key are different in production'),
                         'values' => array(
                             array(
                                 'id' => 'active_on',
@@ -467,7 +477,6 @@ class Moova extends CarrierModule
     {
         try {
             if (Context::getContext()->customer->logged == true) {
-
                 $destination = $this->getDestination();
                 $products = Context::getContext()->cart->getProducts(true);
                 $price = $this->moova->getPrice(
@@ -513,7 +522,9 @@ class Moova extends CarrierModule
             $products
         );
 
-        $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$order->id' WHERE id_order_carrier=$carrier";
+        $sql = "UPDATE " .
+            _DB_PREFIX_ .
+            "order_carrier SET tracking_number='$order->id' WHERE id_order_carrier=$carrier";
         Db::getInstance()->execute($sql);
 
         return json_encode($order);
@@ -534,11 +545,14 @@ class Moova extends CarrierModule
         $carrier->external_module_name = $this->name;
         $carrier->shipping_method = 2;
 
-        foreach (Language::getLanguages() as $lang)
+        foreach (Language::getLanguages() as $lang) {
             $carrier->delay[$lang['id_lang']] = $this->l('24 hours delivery');
+        }
 
         if ($carrier->add() == true) {
-            @copy(dirname(__FILE__) . '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/' . (int) $carrier->id . '.jpg');
+            @copy(dirname(__FILE__) .
+                '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/'
+                . (int) $carrier->id . '.jpg');
             Configuration::updateValue('MYSHIPPINGMODULE_CARRIER_ID', (int) $carrier->id);
             return $carrier;
         }
@@ -550,8 +564,9 @@ class Moova extends CarrierModule
     {
         $groups_ids = array();
         $groups = Group::getGroups(Context::getContext()->language->id);
-        foreach ($groups as $group)
+        foreach ($groups as $group) {
             $groups_ids[] = $group['id_group'];
+        }
 
         $carrier->setGroups($groups_ids);
     }

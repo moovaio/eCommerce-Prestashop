@@ -44,7 +44,7 @@ class MoovaApi extends ApiConnector implements ApiInterface
     public function get(string $endpoint, array $body = [], array $headers = [])
     {
         $body = array_merge($this->api_config, $body);
-        $url = $this->get_base_url() . $endpoint;
+        $url = $this->getBaseUrl() . $endpoint;
 
         $headers =[
             "Authorization: $this->auth_header",
@@ -58,8 +58,8 @@ class MoovaApi extends ApiConnector implements ApiInterface
 
     public function post(string $endpoint, array $body = [], array $headers = [])
     {
-        $url = $this->get_base_url() . $endpoint;
-        $url = $this->add_params_to_url($url, http_build_query($this->api_config));
+        $url = $this->getBaseUrl() . $endpoint;
+        $url = $this->addParamsToUrl($url, http_build_query($this->api_config));
         $headers =[
             "Authorization: $this->auth_header",
             "Content-Type: application/json",
@@ -69,8 +69,8 @@ class MoovaApi extends ApiConnector implements ApiInterface
 
     public function put(string $endpoint, array $body = [], array $headers = [])
     {
-        $url = $this->get_base_url() . $endpoint;
-        $url = $this->add_params_to_url($url, http_build_query($this->api_config));
+        $url = $this->getBaseUrl() . $endpoint;
+        $url = $this->addParamsToUrl($url, http_build_query($this->api_config));
         $headers =[
             "Authorization: $this->auth_header",
             "Content-Type: application/json",
@@ -80,8 +80,8 @@ class MoovaApi extends ApiConnector implements ApiInterface
 
     public function delete(string $endpoint, array $body = [], array $headers = [])
     {
-        $url = $this->get_base_url() . $endpoint;
-        $url = $this->add_params_to_url($url, http_build_query($this->api_config));
+        $url = $this->getBaseUrl() . $endpoint;
+        $url = $this->addParamsToUrl($url, http_build_query($this->api_config));
         $headers =[
             "Authorization: $this->auth_header",
             "Content-Type: application/json",
@@ -89,7 +89,7 @@ class MoovaApi extends ApiConnector implements ApiInterface
         return $this->exec('DELETE', $url, $body, $headers);
     }
 
-    public function get_base_url()
+    public function getBaseUrl()
     {
         if ($this->isProd == false) {
             return self::DEV_BASE_URL;

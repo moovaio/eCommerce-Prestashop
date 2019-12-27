@@ -38,7 +38,7 @@ switch (Tools::getValue('action')) {
         echo $moova->processOrder(Tools::getValue('order'));
         break;
     case 'updateOrderStatus':
-        echo $moova->updateOrderStatus(Tools::getValue('trackingNumber'), 'READY', NULL);
+        echo $moova->updateOrderStatus(Tools::getValue('trackingNumber'), 'READY', null);
         break;
     case 'getLabel':
         echo $moova->getShippingLabel(Tools::getValue('trackingNumber'));
