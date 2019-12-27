@@ -81,6 +81,7 @@ class Moova extends CarrierModule
         Configuration::updateValue('MOOVA_KEY_AUTHENTICATION',  $this->randKey(40));
         return parent::install() &&
             $this->registerHook('moduleRoutes')  &&
+            $this->hookActionOrderStatusPostUpdate($params) &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
             $this->registerHook('displayAdminOrderContentShip') &&
@@ -575,10 +576,9 @@ class Moova extends CarrierModule
         $carrier->addZone($SOUTH_AMERICA);
     }
 
-    public function updateOrderStatus($order, $status, $reason)
+    public function updateOrderStatus($trackingNumber, $status, $reason)
     {
-        $carrier = $this->getCarrier($order);
-        $this->moova->updateOrderStatus($carrier->tracking_number, $status, $reason);
+        return $this->moova->updateOrderStatus($trackingNumber, $status, $reason);
     }
 
     public function getShippingLabel($trackingNumber)
@@ -625,5 +625,11 @@ class Moova extends CarrierModule
                 )
             )
         );
+    }
+
+    public function hookActionOrderStatusPostUpdate($params)
+    {
+        $params['newOrderStatus'];
+        $params['orderStatus'];
     }
 }

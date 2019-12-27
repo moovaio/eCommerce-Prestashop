@@ -62,19 +62,19 @@ $(document).ready(function() {
 
   function moovaInformReady() {
     $.ajax({
-      type: "GET",
+      type: "POST",
       url: baseDir + "modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
       data: {
         action: "updateOrderStatus",
-        order: id_order,
+        trackingNumber: Moova.trackingNumber,
         status: "READY",
         reason: ""
       },
       success: function(data) {
-        window.location.reload(false);
+        //window.location.reload(false);
       }
     });
   }

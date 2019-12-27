@@ -8,7 +8,7 @@
         <a class="btn btn-default" id='moova_create_shipping'>
             <i class="icon-envelope"></i> {l s='Create shipping' mod='Moova'}
         </a>
-        {/if} {if $trackingNumber} {if $status ==='READY'}
+        {/if} {if $trackingNumber} {if sizeof($status) == 0}
         <a class="btn btn-default" id='moova_inform_ready'>
             <i class="icon-truck"></i> Inform is Ready
         </a>

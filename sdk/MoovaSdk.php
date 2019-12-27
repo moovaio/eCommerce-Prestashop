@@ -151,21 +151,6 @@ class MoovaSdk
     }
 
     /**
-     * Gets the order status in Moova
-     *
-     * @param string $order_id
-     * @return void
-     */
-    public function get_order_status(string $order_id)
-    {
-        $res = $this->get_order($order_id);
-        if (is_array($res)) {
-            return $res['status'];
-        }
-        return false;
-    }
-
-    /**
      * Updates the order status in Moova
      *
      * @param string $orderId
@@ -173,18 +158,18 @@ class MoovaSdk
      * @param string $reason
      * @return false|array
      */
-    public function updateOrderStatus(string $orderId, string $status, string $reason = '')
+    public function updateOrderStatus(string $orderId, string $status, $reason = '')
     {
         $data_to_send = [];
         if ($reason) {
             $data_to_send['reason'] = $reason;
         }
         $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $data_to_send);
-
-        if (empty($res['status']) || strtoupper($res['status']) !== strtoupper($status)) {
+        if (!isset($res->id)) {
             return false;
         }
-        return $res;
+
+        return json_encode($res);
     }
 
     public static function getAddress($fullStreet)
