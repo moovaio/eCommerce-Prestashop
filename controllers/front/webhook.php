@@ -1,6 +1,6 @@
 <?php
 
-class MoovaStatusListenerModuleFrontController extends ModuleFrontController
+class MoovaWebhookModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

@@ -161,16 +161,9 @@ class Moova extends CarrierModule
         }
     }
 
-    public function hookActionOrderStatusPostUpdate($params)
-    {
-        $params['newOrderStatus'];
-        $params['orderStatus'];
-    }
     /**
      * displayAdminOrderRight
      */
-
-
     private function getStatusMoova($trackingNumber)
     {
         $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by date desc";
@@ -619,17 +612,12 @@ class Moova extends CarrierModule
     public function hookModuleRoutes()
     {
         return array(
-            'module-Moova-statusListener' => array(
-                'controller' => 'statusListener',
-                'rule' =>  'moova/statusListener',
-                'params' => array(
-                    'fc' => 'module',
-                    'module' => 'Moova',
-                )
-            ),
-            'module-Moova-login' => array(
-                'controller' => 'login',
-                'rule' =>  'moova/login',
+            'module-Moova-webhook' => array(
+                'controller' => 'webhook',
+                'rule' =>  'moova/webhook',
+                'keywords' => array(
+                    'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
+                ),
                 'params' => array(
                     'fc' => 'module',
                     'module' => 'Moova',
