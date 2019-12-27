@@ -50,7 +50,7 @@ class Moova extends CarrierModule
         $this->bootstrap = true;
 
         parent::__construct();
-        $this->displayName = $this->l('Moova'); 
+        $this->displayName = $this->l('Moova');
         $this->description = $this->l('This extension allows you to create shippings with Moova');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall  Moova?');
