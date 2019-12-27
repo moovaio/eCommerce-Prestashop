@@ -116,41 +116,6 @@ class MoovaSdk
     }
 
     /**
-     * Gets the tracking status for a Moova Shipment
-     *
-     * @param string $order_id
-     * @return array|false
-     */
-    public function get_tracking(string $order_id)
-    {
-        $res = $this->get_order($order_id);
-        if (is_array($res)) {
-            return $res['statusHistory'];
-        }
-        return false;
-    }
-
-    /**
-     * Gets a Moova order
-     *
-     * @param string $order_id
-     * @return array|false
-     */
-    public function get_order(string $order_id)
-    {
-        $res = $this->api->get('/shippings/' . $order_id);
-        if (Helper::get_option('debug')) {
-            Helper::log_debug(__FUNCTION__ . ' - Data enviada a Moova: ' . $order_id);
-            Helper::log_debug(__FUNCTION__ . ' - Data recibida de Moova: ' . json_encode($res));
-        }
-        if (empty($res['id'])) {
-            Helper::log_error('No se pudo obtener del pedido ' . $order_id);
-            return false;
-        }
-        return $res;
-    }
-
-    /**
      * Updates the order status in Moova
      *
      * @param string $orderId

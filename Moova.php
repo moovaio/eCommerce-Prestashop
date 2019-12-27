@@ -81,11 +81,16 @@ class Moova extends CarrierModule
         Configuration::updateValue('MOOVA_KEY_AUTHENTICATION',  $this->randKey(40));
         return parent::install() &&
             $this->registerHook('moduleRoutes')  &&
-            $this->hookActionOrderStatusPostUpdate($params) &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
             $this->registerHook('displayAdminOrderContentShip') &&
             $this->registerHook('displayAdminOrderRight');
+    }
+
+    public function uninstall()
+    {
+        Configuration::deleteByName('MOOVA_LIVE_MODE');
+        return parent::uninstall();
     }
 
     public function addOrderState($name)
@@ -121,9 +126,7 @@ class Moova extends CarrierModule
         return true;
     }
 
-    /**
-     * displayAdminOrderRight
-     */
+
     public function hookDisplayAdminOrderRight($param)
     {
 
@@ -147,17 +150,45 @@ class Moova extends CarrierModule
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
     }
+    /**
+     * Add the CSS & JavaScript files you want to be loaded in the BO.
+     */
+    public function hookBackOfficeHeader()
+    {
+        if (Tools::getValue('controller') == 'AdminOrders') {
+            $this->context->controller->addJquery();
+            $this->context->controller->addJS($this->_path . 'views/js/back.js');
+        }
+    }
+
+    public function hookModuleRoutes()
+    {
+        return array(
+            'module-Moova-webhook' => array(
+                'controller' => 'webhook',
+                'rule' =>  'moova/webhook',
+                'params' => array(
+                    'fc' => 'module',
+                    'module' => 'Moova',
+                )
+            )
+        );
+    }
+
+    public function hookActionOrderStatusPostUpdate($params)
+    {
+        $params['newOrderStatus'];
+        $params['orderStatus'];
+    }
+    /**
+     * displayAdminOrderRight
+     */
+
 
     private function getStatusMoova($trackingNumber)
     {
         $sql = "SELECT * FROM " . _DB_PREFIX_ . "moova_status where shipping_id='$trackingNumber' order by date desc";
         return Db::getInstance()->ExecuteS($sql);
-    }
-
-    public function uninstall()
-    {
-        Configuration::deleteByName('MOOVA_LIVE_MODE');
-        return parent::uninstall();
     }
 
     /**
@@ -597,39 +628,5 @@ class Moova extends CarrierModule
         } catch (Exception $e) {
             return false;
         }
-    }
-    /**
-     * Add the CSS & JavaScript files you want to be loaded in the BO.
-     */
-    public function hookBackOfficeHeader()
-    {
-        if (Tools::getValue('controller') == 'AdminOrders') {
-            $this->context->controller->addJquery();
-            $this->context->controller->addJS($this->_path . 'views/js/back.js');
-            $this->context->controller->addCSS($this->_path . 'views/css/back.css');
-        }
-    }
-
-    public function hookModuleRoutes()
-    {
-        return array(
-            'module-Moova-login' => array(
-                'controller' => 'login',
-                'rule' =>  'moova/webhook',
-                'keywords' => array(
-                    'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
-                ),
-                'params' => array(
-                    'fc' => 'module',
-                    'module' => 'Moova',
-                )
-            )
-        );
-    }
-
-    public function hookActionOrderStatusPostUpdate($params)
-    {
-        $params['newOrderStatus'];
-        $params['orderStatus'];
     }
 }

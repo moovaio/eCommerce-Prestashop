@@ -4,7 +4,7 @@ class MoovaLoginModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
-        return  $this->setTemplate('module:MOOVA/views/templates/dpage.tpl');
+        return  $this->setTemplate('module:MOOVA/views/templates/webhook.tpl');
     }
 
     public function postProcess()
