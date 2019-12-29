@@ -468,7 +468,7 @@ class Moova extends CarrierModule
         }
     }
 
-    public function getOrderShippingCost()
+    public function getOrderShippingCost($cart, $shipping_cost)
     {
         try {
             if (Context::getContext()->customer->logged == true) {
@@ -484,6 +484,11 @@ class Moova extends CarrierModule
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    public function getOrderShippingCostExternal($params)
+    {
+        return  false;
     }
 
     private function getDestination()
