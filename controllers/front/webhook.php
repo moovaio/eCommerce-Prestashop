@@ -28,7 +28,7 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
-        return  $this->setTemplate('module:MOOVA/views/templates/front/webhook.tpl');
+        return  $this->setTemplate('module:Moova/views/templates/front/webhook.tpl');
     }
 
     public function postProcess()

@@ -30,7 +30,7 @@ $(document).ready(function() {
   function moovaCreateShipping() {
     $.ajax({
       type: "GET",
-      url: baseDir + "modules/moova/Api/ajax.php",
+      url: baseDir + "modules/Moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -48,7 +48,7 @@ $(document).ready(function() {
   function moovaGetLabel() {
     $.ajax({
       type: "GET",
-      url: baseDir + "modules/moova/Api/ajax.php",
+      url: baseDir + "modules/Moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -69,7 +69,7 @@ $(document).ready(function() {
   function moovaInformReady() {
     $.ajax({
       type: "POST",
-      url: baseDir + "modules/moova/Api/ajax.php",
+      url: baseDir + "modules/Moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,

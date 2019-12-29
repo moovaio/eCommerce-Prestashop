@@ -619,7 +619,7 @@ class Moova extends CarrierModule
         return array(
             'module-Moova-webhook' => array(
                 'controller' => 'webhook',
-                'rule' =>  'moova/webhook',
+                'rule' =>  'Moova/webhook',
                 'keywords' => array(
                     'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
                 ),
