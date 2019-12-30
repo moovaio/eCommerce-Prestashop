@@ -46,7 +46,13 @@ class MoovaSdk
                 'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
                 'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
                 'country' => Configuration::get('MOOVA_ORIGIN_COUNTRY'),
-                'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', '')
+                'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
+                "contact" => [
+                    "firstName" => Configuration::get('MOOVA_ORIGIN_NAME', ''),
+                    "lastName" =>  Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
+                    "email" =>  Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
+                    "phone" => Configuration::get('MOOVA_ORIGIN_PHONE', '')
+                ]
             ],
             'to' => [
                 'street' => $street['street'],
@@ -56,7 +62,7 @@ class MoovaSdk
                 'state' => $to->state,
                 'postalCode' => $to->postcode,
                 'country' => $to->country,
-                'instructions' => ''
+                'instructions' => $to->other,
             ],
             'currency' => $to->currency,
             'conf' => [
@@ -92,10 +98,17 @@ class MoovaSdk
      *
      * @return array|false
      */
-    public function processOrder($to, $items)
+    public function processOrder($to, $items, $contact)
     {
         $payload =  $this->getOrderModel($to, $items);
         $payload['internalCode'] = $to->internalCode;
+
+        $payload["to"]["contact"] = [
+            "firstName" => $contact->firstname,
+            "lastName" =>  $contact->lastname,
+            "email" =>   $contact->email,
+            "phone" => $to->phone
+        ];
         $res = $this->api->post('/shippings', $payload);
         return $res;
     }
@@ -132,8 +145,8 @@ class MoovaSdk
         $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $payload);
         if (!isset($res->id)) {
             return false;
-        }  
-        $query = "INSERT INTO ". _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$res->created_at', 'READY')";
+        }
+        $query = "INSERT INTO " . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$res->created_at', 'READY')";
         Db::getInstance()->execute($query);
         return json_encode($res);
     }

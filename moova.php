@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2019 PrestaShop
  *
@@ -511,13 +512,13 @@ class Moova extends CarrierModule
         $order = new Order($order);
         $products = $order->getProducts();
         $destination = $this->getDestination();
-
+        $customer = new Customer((int) ($order->id_customer));
         $carrier = $order->getIdOrderCarrier();
         $destination->internalCode = $order->reference;
-
         $order = $this->moova->processOrder(
             $destination,
-            $products
+            $products,
+            $customer
         );
 
         $sql = "UPDATE " .
@@ -551,7 +552,7 @@ class Moova extends CarrierModule
             @copy(dirname(__FILE__) .
                 '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/'
                 . (int) $carrier->id . '.jpg');
-            Configuration::updateValue('MYSHIPPINGMODULE_CARRIER_ID', (int) $carrier->id);
+            Configuration::updateValue('MOOVA_CARRIER_ID', (int) $carrier->id);
             return $carrier;
         }
 

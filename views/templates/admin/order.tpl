@@ -25,7 +25,7 @@
 <div class="panel">
     <div class="panel-heading">
         <i class="icon-truck"></i> Moova
-    </div>
+    </div> 
     <div>
  
         {if !$trackingNumber}
