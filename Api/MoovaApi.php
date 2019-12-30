@@ -24,8 +24,8 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
-include_once(_PS_MODULE_DIR_ . '/Moova/Api/ApiConnector.php');
-include_once(_PS_MODULE_DIR_ . '/Moova/Api/ApiInterface.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Api/ApiConnector.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Api/ApiInterface.php');
 class MoovaApi extends ApiConnector implements ApiInterface
 {
     const DEV_BASE_URL = 'https://api-dev.moova.io/b2b';

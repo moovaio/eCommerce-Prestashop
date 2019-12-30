@@ -28,7 +28,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-include_once(_PS_MODULE_DIR_ . '/Moova/sdk/MoovaSdk.php');
+include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 
 class Moova extends CarrierModule
 {
@@ -619,7 +619,7 @@ class Moova extends CarrierModule
         return array(
             'module-Moova-webhook' => array(
                 'controller' => 'webhook',
-                'rule' =>  'Moova/webhook',
+                'rule' =>  'moova/webhook',
                 'keywords' => array(
                     'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
                 ),

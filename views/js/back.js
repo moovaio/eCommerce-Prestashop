@@ -30,7 +30,7 @@ $(document).ready(function() {
   function moovaCreateShipping() {
     $.ajax({
       type: "GET",
-      url: baseDir + "modules/Moova/Api/ajax.php",
+      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -48,7 +48,7 @@ $(document).ready(function() {
   function moovaGetLabel() {
     $.ajax({
       type: "GET",
-      url: baseDir + "modules/Moova/Api/ajax.php",
+      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -69,7 +69,7 @@ $(document).ready(function() {
   function moovaInformReady() {
     $.ajax({
       type: "POST",
-      url: baseDir + "modules/Moova/Api/ajax.php",
+      url:  "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -83,7 +83,7 @@ $(document).ready(function() {
         if (!data) {
           alert("Error changing status. Please change it manually in moova.io");
         }
-        window.location.reload(true);
+        //window.location.reload(true);
       }
     });
   }

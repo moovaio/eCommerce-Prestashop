@@ -1,6 +1,6 @@
 <?php
 
-include_once(_PS_MODULE_DIR_ . '/Moova/Api/MoovaApi.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Api/MoovaApi.php');
 
 class MoovaSdk
 {
@@ -10,7 +10,7 @@ class MoovaSdk
         $this->api = new MoovaApi(
             Configuration::get('MOOVA_APP_ID', ''),
             Configuration::get('MOOVA_APP_KEY', ''),
-            Configuration::get('MOOVA_LIVE_MODE', false)
+            Configuration::get('MOOVA_LIVE_MODE', false) ?? false
         );
     }
 
@@ -137,7 +137,7 @@ class MoovaSdk
         $dateUTC = new \DateTime("now", new \DateTimeZone("UTC"));
         $date = $dateUTC->format(DateTime::ATOM);
         $query = "INSERT INTO `prestashop`." . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$date', 'READY')";
-        Db::getInstance()->execute($query);
+        //$res->query=$query;
         return json_encode($res);
     }
 
