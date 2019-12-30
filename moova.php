@@ -617,7 +617,7 @@ class Moova extends CarrierModule
     public function hookModuleRoutes()
     {
         return array(
-            'module-Moova-webhook' => array(
+            'module-moova-webhook' => array(
                 'controller' => 'webhook',
                 'rule' =>  'moova/webhook',
                 'keywords' => array(
@@ -625,7 +625,7 @@ class Moova extends CarrierModule
                 ),
                 'params' => array(
                     'fc' => 'module',
-                    'module' => 'Moova',
+                    'module' => 'moova',
                 )
             )
         );
