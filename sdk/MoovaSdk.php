@@ -132,12 +132,9 @@ class MoovaSdk
         $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $payload);
         if (!isset($res->id)) {
             return false;
-        }
-
-        $dateUTC = new \DateTime("now", new \DateTimeZone("UTC"));
-        $date = $dateUTC->format(DateTime::ATOM);
-        $query = "INSERT INTO `prestashop`." . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$date', 'READY')";
-        //$res->query=$query;
+        }  
+        $query = "INSERT INTO ". _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$res->created_at', 'READY')";
+        Db::getInstance()->execute($query);
         return json_encode($res);
     }
 
