@@ -38,7 +38,9 @@ class Moova extends CarrierModule
     {
         $this->name = 'moova';
         $this->tab = 'shipping_logistics';
+        $this->author = 'Moova.io';
         $this->version = '1.0.0';
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_); 
         $this->author = 'Moova.io';
         $this->need_instance = 0;
         $this->moova = new MoovaSdk();
@@ -47,7 +49,8 @@ class Moova extends CarrierModule
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
          */
-        $this->bootstrap = true;
+        $this->bootstrap = true; 
+        $this->module_key = '8d7853cc1d2a2821ca4e4e41dc2db3e6';
 
         parent::__construct();
         $this->displayName = $this->l('Moova');
