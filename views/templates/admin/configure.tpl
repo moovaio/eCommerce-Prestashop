@@ -26,7 +26,7 @@
 
 {if $message['status']=='error' }
 <div class="alert alert-danger" role="alert">
-{l s='Please complete the required field ' mod='moova'} {$message['field']}
+{l s='Please complete the required field ' mod='moova'} {$message['field']|escape:'htmlall':'UTF-8'}
 <br />
 </div>
 {/if}
