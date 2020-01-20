@@ -40,7 +40,7 @@ class Moova extends CarrierModule
         $this->tab = 'shipping_logistics';
         $this->author = 'Moova.io';
         $this->version = '1.0.0';
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_); 
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->author = 'Moova.io';
         $this->need_instance = 0;
         $this->moova = new MoovaSdk();
@@ -49,7 +49,7 @@ class Moova extends CarrierModule
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
          */
-        $this->bootstrap = true; 
+        $this->bootstrap = true;
         $this->module_key = '8d7853cc1d2a2821ca4e4e41dc2db3e6';
 
         parent::__construct();
@@ -182,14 +182,35 @@ class Moova extends CarrierModule
         /**
          * If values have been submitted in the form, process.
          */
-        if (((bool) Tools::isSubmit('submitMoovaModule')) == true) {
+        $message = ['status' => 'waiting'];
+        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
+        if ($showMessage) {
             $this->postProcess();
+            $configForm = $this->getConfigForm();
+            $originForm = $this->getOriginForm();
+            $fields = [$configForm, $originForm];
+            $message = $this->validateformIsComplete($fields);
         }
+        $this->context->smarty->assign('message', $message);
 
         $this->context->smarty->assign('module_dir', $this->_path);
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
         return $output . $this->renderForm();
+    }
+
+    private function validateformIsComplete($forms)
+    {
+        foreach ($forms as $form) {
+            $forms = $form['form']['input'];
+            foreach ($forms as $item) {
+                if ((isset($item['required']) && $item['required'] == 1)) {
+                    if (!Configuration::get($item['name']))
+                        return ["status" => 'error', 'field' => $item['label']];
+                }
+            }
+            return ["status" => 'success'];
+        }
     }
 
     /**

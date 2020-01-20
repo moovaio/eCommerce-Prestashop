@@ -22,6 +22,22 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
+ 
+
+{if $message['status']=='error' }
+<div class="alert alert-danger" role="alert">
+{l s='Please complete the required field ' mod='moova'} {$message['field']}
+<br />
+</div>
+{/if}
+
+{if $message['status']=='success'}
+<div class="alert alert-success" role="alert">
+{l s='Everything was saved correctly' mod='moova'}<br />
+</div>
+{/if}
+
+
 
 <div class="panel">
 	<h3><i class="icon icon-truck"></i> {l s='Moova Configuration' mod='moova'}</h3>
