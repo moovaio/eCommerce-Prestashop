@@ -246,8 +246,9 @@ class Moova extends CarrierModule
             $forms = $form['form']['input'];
             foreach ($forms as $item) {
                 if ((isset($item['required']) && $item['required'] == 1)) {
-                    if (!Configuration::get($item['name']))
+                    if (!Configuration::get($item['name'])) {
                         return ["status" => 'error', 'field' => $item['label']];
+                    }
                 }
             }
             return ["status" => 'success'];
