@@ -538,7 +538,9 @@ class Moova extends CarrierModule
     {
         try {
             if (Context::getContext()->customer->logged == true) {
-                $destination = $this->getDestination();
+                $cart = Context::getContext()->cart;
+                $order = Order::getOrderByCartId((int) ($cart->id));
+                $destination = $this->getDestination($order, $cart);
                 $products = Context::getContext()->cart->getProducts(true);
                 $price = $this->moova->getPrice(
                     $destination,
@@ -557,12 +559,16 @@ class Moova extends CarrierModule
         return  false;
     }
 
-    private function getDestination()
+    public function getDestination($order, $cart = null)
     {
-        $id_address_delivery = Context::getContext()->cart->id_address_delivery;
+        if (!$cart) {
+            $cart = new Cart($order->id_cart);
+        }
+
+        $id_address_delivery = $order->id_address_delivery;
         $destination = new Address($id_address_delivery);
         $country = new Country($destination->id_country);
-        $currency = new Currency(Context::getContext()->cart->id_currency);
+        $currency = new Currency($cart->id_currency);
         $state = new State($destination->id_state);
 
         $destination->country = $country->iso_code;

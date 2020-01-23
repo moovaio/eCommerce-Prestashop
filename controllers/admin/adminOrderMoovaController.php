@@ -25,19 +25,19 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
+include_once(_PS_MODULE_DIR_ . '/moova/moova.php');
 
 class AdminOrderMoovaController extends ModuleAdminController
 {
-    private $moova;
-
     public function __construct()
     {
         $this->MoovaSDK = new MoovaSdk();
+        $this->moova = new Moova();
         parent::__construct();
     }
 
 
-    public function ajaxProcessRequest()
+    public function ajaxProcessChangeStatus()
     {
         $trackingNumber = Tools::getValue('trackingNumber');
         echo $this->MoovaSDK->updateOrderStatus($trackingNumber, 'READY', null);
@@ -51,22 +51,27 @@ class AdminOrderMoovaController extends ModuleAdminController
 
     public function ajaxProcessOrder()
     {
-        $order = new Order(Tools::getValue('order'));
+        $order = new Order(Tools::getValue('externalId'));
         $products = $order->getProducts();
-        $destination = $this->getDestination();
+        $destination =  $this->moova->getDestination($order);
+
         $customer = new Customer((int) ($order->id_customer));
-        $carrier = pSQL($order->getIdOrderCarrier());
+
+
         $destination->internalCode = $order->reference;
-        $order = $this->MoovaSDK->processOrder(
+        $moovaOrder = $this->MoovaSDK->processOrder(
             $destination,
             $products,
             $customer
         );
 
-        $orderId = pSQL($order->id);
-        $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number=$orderId WHERE id_order_carrier=$carrier";
+        $carrier = pSQL($order->getIdOrderCarrier());
+        $trackingNumber = pSQL($moovaOrder->id);
+
+        $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$trackingNumber' WHERE id_order_carrier=$carrier";
         Db::getInstance()->execute($sql);
 
-        return json_encode($order);
+        echo json_encode($moovaOrder);
+        die();
     }
 }

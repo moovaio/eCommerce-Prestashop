@@ -38,15 +38,16 @@ $(document).ready(function() {
       data: {
         ajax: true,
         controller: "AdminOrderMoova",
-        action: "Label",
+        action: "Order",
         token: $("#moova_wrapper").attr("data-token"),
-        order: id_order
+        externalId: id_order
       },
       success: function(data) {
         if (!data) {
           alert("Error creating shipment");
+        } else {
+          window.location.reload(true);
         }
-        window.location.reload(true);
       }
     });
   }
@@ -85,7 +86,7 @@ $(document).ready(function() {
       data: {
         ajax: true,
         controller: "AdminOrderMoova",
-        action: "Label",
+        action: "ChangeStatus",
         token: $("#moova_wrapper").attr("data-token"),
         trackingNumber: Moova.trackingNumber,
         status: "READY",
