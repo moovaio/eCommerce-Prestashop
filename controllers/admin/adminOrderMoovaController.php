@@ -60,7 +60,7 @@ class AdminOrderMoovaController extends ModuleAdminController
 
 
         $destination->internalCode = $order->reference;
-        $destination->other = $order->getFirstMessage();
+        $destination->description = $order->getFirstMessage();
 
         $moovaOrder = $this->MoovaSDK->processOrder(
             $destination,

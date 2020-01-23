@@ -64,6 +64,7 @@ class MoovaSdk
                 'country' => $to->country,
                 'instructions' => $to->other,
             ],
+            'description' => $to->description,
             'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
