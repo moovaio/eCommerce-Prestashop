@@ -30,12 +30,18 @@ $(document).ready(function() {
   function moovaCreateShipping() {
     $.ajax({
       type: "GET",
-      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
-
-      data: "action=processOrder&order=" + id_order,
+      url: "ajax-tab.php",
+      dataType: "json",
+      data: {
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "Label",
+        token: $("#moova_wrapper").attr("data-token"),
+        order: id_order
+      },
       success: function(data) {
         if (!data) {
           alert("Error creating shipment");
@@ -48,13 +54,16 @@ $(document).ready(function() {
   function moovaGetLabel() {
     $.ajax({
       type: "GET",
-      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
+      url: "ajax-tab.php",
       dataType: "json",
       data: {
-        action: "getLabel",
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "Label",
+        token: $("#moova_wrapper").attr("data-token"),
         trackingNumber: Moova.trackingNumber
       },
       success: function(data) {
@@ -69,12 +78,15 @@ $(document).ready(function() {
   function moovaInformReady() {
     $.ajax({
       type: "POST",
-      url: "/modules/moova/Api/ajax.php",
-      headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
+      url: "ajax-tab.php",
+      dataType: "json",
       data: {
-        action: "updateOrderStatus",
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "Label",
+        token: $("#moova_wrapper").attr("data-token"),
         trackingNumber: Moova.trackingNumber,
         status: "READY",
         reason: ""

@@ -139,6 +139,8 @@ class MoovaSdk
     public function updateOrderStatus(string $orderId, string $status, $reason = '')
     {
         $payload = [];
+        $orderId = pSQL($orderId);
+        $status = pSQL($orderId);
         if ($reason) {
             $payload['reason'] = $reason;
         }
