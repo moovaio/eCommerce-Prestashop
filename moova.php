@@ -536,22 +536,18 @@ class Moova extends CarrierModule
 
     public function getOrderShippingCost($cart, $shipping_cost)
     {
-        try {
-            if (Context::getContext()->customer->logged == true) {
-                $cart = Context::getContext()->cart;
-                $order = Order::getOrderByCartId((int) ($cart->id));
-                $destination = $this->getDestination($order, $cart);
-                $products = Context::getContext()->cart->getProducts(true);
-                $price = $this->moova->getPrice(
-                    $destination,
-                    $products
-                );
-                return $price;
-            }
-            return false;
-        } catch (Exception $e) {
-            return false;
+        if (Context::getContext()->customer->logged == true) {
+            $cart = Context::getContext()->cart;
+            $destination = $this->getDestination($cart);
+            $products = Context::getContext()->cart->getProducts(true);
+
+            $price = $this->moova->getPrice(
+                $destination,
+                $products
+            );
+            return $price;
         }
+        return false;
     }
 
     public function getOrderShippingCostExternal($params)
@@ -559,13 +555,9 @@ class Moova extends CarrierModule
         return  false;
     }
 
-    public function getDestination($order, $cart = null)
+    public function getDestination($cart)
     {
-        if (!$cart) {
-            $cart = new Cart($order->id_cart);
-        }
-
-        $id_address_delivery = $order->id_address_delivery;
+        $id_address_delivery = $cart->id_address_delivery;
         $destination = new Address($id_address_delivery);
         $country = new Country($destination->id_country);
         $currency = new Currency($cart->id_currency);

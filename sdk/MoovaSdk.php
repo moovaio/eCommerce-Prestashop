@@ -136,11 +136,9 @@ class MoovaSdk
      * @param string $reason
      * @return false|array
      */
-    public function updateOrderStatus(string $orderId, string $status, $reason = '')
+    public function updateOrderStatus(string $orderId, string $status, $reason = null)
     {
         $payload = [];
-        $orderId = pSQL($orderId);
-        $status = pSQL($orderId);
         if ($reason) {
             $payload['reason'] = $reason;
         }
@@ -148,7 +146,10 @@ class MoovaSdk
         if (!isset($res->id)) {
             return false;
         }
-        $query = "INSERT INTO " . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$res->created_at', 'READY')";
+        $orderId = pSQL($orderId);
+        $status = pSQL($status);
+        $date = pSQL($res->created_at);
+        $query = "INSERT INTO " . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$date', '$status')";
         Db::getInstance()->execute($query);
         return json_encode($res);
     }

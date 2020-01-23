@@ -29,7 +29,7 @@
 $(document).ready(function() {
   function moovaCreateShipping() {
     $.ajax({
-      type: "GET",
+      type: "POST",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
@@ -79,6 +79,7 @@ $(document).ready(function() {
   function moovaInformReady() {
     $.ajax({
       type: "POST",
+      headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
       url: "ajax-tab.php",
@@ -86,11 +87,9 @@ $(document).ready(function() {
       data: {
         ajax: true,
         controller: "AdminOrderMoova",
-        action: "ChangeStatus",
+        action: "InformReady",
         token: $("#moova_wrapper").attr("data-token"),
-        trackingNumber: Moova.trackingNumber,
-        status: "READY",
-        reason: ""
+        trackingNumber: Moova.trackingNumber
       },
       success: function(data) {
         if (!data) {

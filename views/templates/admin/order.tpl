@@ -27,9 +27,6 @@
         <i class="icon-truck"></i> Moova 
     </div> 
     <div>
- <a class="btn btn-default" id='moova_create_shipping'>
-            <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
-        </a>
         {if !$trackingNumber}
         <a class="btn btn-default" id='moova_create_shipping'>
             <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
