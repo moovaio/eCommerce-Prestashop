@@ -22,23 +22,23 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-<div class="panel">
+<div class="panel" id='moova_wrapper' data-token='{$token}'>
     <div class="panel-heading">
-        <i class="icon-truck"></i> Moova
+        <i class="icon-truck"></i> Moova 
     </div> 
     <div>
- 
+
         {if !$trackingNumber}
         <a class="btn btn-default" id='moova_create_shipping'>
             <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
         </a>
         {/if} {if $trackingNumber} {if sizeof($status) == 0}
         <a class="btn btn-default" id='moova_inform_ready'>
-            <i class="icon-truck"></i> Inform is Ready
+            <i class="icon-truck"></i> {l s='Inform is Ready' mod='moova'}
         </a>
         {/if}
         <a class="btn btn-default _blank" id='moova_get_label' target="_blank">
-            <i class="icon-file-text"></i> Get Label
+            <i class="icon-file-text"></i> {l s='Get label' mod='moova'}
         </a>
         {/if}
         <hr>
@@ -48,11 +48,11 @@
                 <thead>
                     <tr>
                         <th>
-                            <span class="title_box ">Status</span>
+                            <span class="title_box ">{l s='Status' mod='moova'}</span>
                         </th>
 
                         <th>
-                            <span class="title_box ">Date</span>
+                            <span class="title_box ">{l s='Date' mod='moova'}</span>
                         </th>
                         <th></th>
                     </tr>

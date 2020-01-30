@@ -35,10 +35,10 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
     {
 
         $data = json_decode(Tools::file_get_contents('php://input'), true);
-        $status = $data['status'];
-        $id = $data['id'];
-        $date = $data['date'];
-        $orderId = $this->getOrderId($id);
+        $status = pSQL($data['status']);
+        $id = pSQL($data['id']);
+        $date = strtotime($data['date']);
+        $orderId = pSQL($this->getOrderId($id));
         if ($orderId == null) {
             return $this->ajaxDie(
                 json_encode([
@@ -67,14 +67,14 @@ class MoovaWebhookModuleFrontController extends ModuleFrontController
             $objOrder = new Order($id);
             $history = new OrderHistory();
             $history->id_order = (int) $objOrder->id;
-            $history->changeIdOrderState($state, (int) ($objOrder->id));
+            $history->changeIdOrderState(pSQL($state), (int) ($objOrder->id));
             $history->addWithemail(true);
         }
     }
 
-
     private function getOrderId($trackingNumber)
     {
+        $trackingNumber = pSQL($trackingNumber);
         $headers = $this->getallheaders();
         $sql = "SELECT * FROM " . _DB_PREFIX_ . "order_carrier WHERE tracking_number='$trackingNumber'";
         $carrier = Db::getInstance()->ExecuteS($sql);

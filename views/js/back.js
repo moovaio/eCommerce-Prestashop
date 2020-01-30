@@ -29,18 +29,25 @@
 $(document).ready(function() {
   function moovaCreateShipping() {
     $.ajax({
-      type: "GET",
-      url: "/modules/moova/Api/ajax.php",
+      type: "POST",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
-
-      data: "action=processOrder&order=" + id_order,
+      url: "ajax-tab.php",
+      dataType: "json",
+      data: {
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "Order",
+        token: $("#moova_wrapper").attr("data-token"),
+        externalId: id_order
+      },
       success: function(data) {
         if (!data) {
           alert("Error creating shipment");
+        } else {
+          window.location.reload(true);
         }
-        window.location.reload(true);
       }
     });
   }
@@ -48,13 +55,16 @@ $(document).ready(function() {
   function moovaGetLabel() {
     $.ajax({
       type: "GET",
-      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
+      url: "ajax-tab.php",
       dataType: "json",
       data: {
-        action: "getLabel",
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "Label",
+        token: $("#moova_wrapper").attr("data-token"),
         trackingNumber: Moova.trackingNumber
       },
       success: function(data) {
@@ -69,15 +79,17 @@ $(document).ready(function() {
   function moovaInformReady() {
     $.ajax({
       type: "POST",
-      url: "/modules/moova/Api/ajax.php",
       headers: { "cache-control": "no-cache" },
       async: true,
       cache: false,
+      url: "ajax-tab.php",
+      dataType: "json",
       data: {
-        action: "updateOrderStatus",
-        trackingNumber: Moova.trackingNumber,
-        status: "READY",
-        reason: ""
+        ajax: true,
+        controller: "AdminOrderMoova",
+        action: "InformReady",
+        token: $("#moova_wrapper").attr("data-token"),
+        trackingNumber: Moova.trackingNumber
       },
       success: function(data) {
         if (!data) {

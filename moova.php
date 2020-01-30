@@ -33,7 +33,7 @@ include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 class Moova extends CarrierModule
 {
     protected $config_form = false;
-
+    protected $ORDER_TAB = 'AdminOrderMoova';
     public function __construct()
     {
         $this->name = 'moova';
@@ -81,6 +81,7 @@ class Moova extends CarrierModule
         Configuration::updateValue('MOOVA_KEY_AUTHENTICATION', $this->randKey(40));
 
         return parent::install() &&
+            $this->installTab() &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
@@ -88,10 +89,41 @@ class Moova extends CarrierModule
             $this->registerHook('displayAdminOrderRight');
     }
 
+    private function installTab()
+    {
+        $tabId = (int) Tab::getIdFromClassName($this->ORDER_TAB);
+        if (!$tabId) {
+            $tabId = null;
+        }
+
+        $tab = new Tab($tabId);
+        $tab->active = 0;
+
+        $tab->name = array();
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = $this->ORDER_TAB;
+        }
+        $tab->class_name = $this->ORDER_TAB;
+        $tab->module = $this->name;
+        return $tab->save();
+    }
+
     public function uninstall()
     {
         Configuration::deleteByName('MOOVA_LIVE_MODE');
-        return parent::uninstall();
+        return parent::uninstall() && $this->uninstallTab();
+    }
+
+    private function uninstallTab()
+    {
+        $tabId = (int) Tab::getIdFromClassName($this->ORDER_TAB);
+
+        if (!$tabId) {
+            return true;
+        }
+        $tab = new Tab($tabId);
+
+        return $tab->delete();
     }
 
     public function addOrderState($name)
@@ -149,9 +181,16 @@ class Moova extends CarrierModule
         $status = $this->getStatusMoova($trackingNumber);
 
         $this->context->smarty->assign('status', $status);
+
+        $this->context->smarty->assign(array(
+            'token' => Tools::getAdminTokenLite($this->ORDER_TAB)
+        ));
+
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
     }
+
+
     /**
      * Add the CSS & JavaScript files you want to be loaded in the BO.
      */
@@ -168,6 +207,7 @@ class Moova extends CarrierModule
      */
     private function getStatusMoova($trackingNumber)
     {
+        $trackingNumber = pSQL($trackingNumber);
         $sql = "SELECT * FROM "
             . _DB_PREFIX_ .
             "moova_status where shipping_id='$trackingNumber' order by id_moova desc";
@@ -495,20 +535,18 @@ class Moova extends CarrierModule
 
     public function getOrderShippingCost($cart, $shipping_cost)
     {
-        try {
-            if (Context::getContext()->customer->logged == true) {
-                $destination = $this->getDestination();
-                $products = Context::getContext()->cart->getProducts(true);
-                $price = $this->moova->getPrice(
-                    $destination,
-                    $products
-                );
-                return $price;
-            }
-            return false;
-        } catch (Exception $e) {
-            return false;
+        if (Context::getContext()->customer->logged == true) {
+            $cart = Context::getContext()->cart;
+            $destination = $this->getDestination($cart);
+            $products = Context::getContext()->cart->getProducts(true);
+
+            $price = $this->moova->getPrice(
+                $destination,
+                $products
+            );
+            return $price;
         }
+        return false;
     }
 
     public function getOrderShippingCostExternal($params)
@@ -516,41 +554,18 @@ class Moova extends CarrierModule
         return  false;
     }
 
-    private function getDestination()
+    public function getDestination($cart)
     {
-        $id_address_delivery = Context::getContext()->cart->id_address_delivery;
+        $id_address_delivery = $cart->id_address_delivery;
         $destination = new Address($id_address_delivery);
         $country = new Country($destination->id_country);
-        $currency = new Currency(Context::getContext()->cart->id_currency);
+        $currency = new Currency($cart->id_currency);
         $state = new State($destination->id_state);
 
         $destination->country = $country->iso_code;
         $destination->currency = $currency->iso_code;
         $destination->state = $state->name;
         return $destination;
-    }
-
-
-    public function processOrder($order)
-    {
-        $order = new Order($order);
-        $products = $order->getProducts();
-        $destination = $this->getDestination();
-        $customer = new Customer((int) ($order->id_customer));
-        $carrier = $order->getIdOrderCarrier();
-        $destination->internalCode = $order->reference;
-        $order = $this->moova->processOrder(
-            $destination,
-            $products,
-            $customer
-        );
-
-        $sql = "UPDATE " .
-            _DB_PREFIX_ .
-            "order_carrier SET tracking_number='$order->id' WHERE id_order_carrier=$carrier";
-        Db::getInstance()->execute($sql);
-
-        return json_encode($order);
     }
 
     protected function addCarrier()
@@ -611,20 +626,10 @@ class Moova extends CarrierModule
 
     protected function addZones($carrier)
     {
-        //$zones = Zone::getZones();
         $SOUTH_AMERICA = 6;
         $carrier->addZone($SOUTH_AMERICA);
     }
 
-    public function updateOrderStatus($trackingNumber, $status, $reason)
-    {
-        return $this->moova->updateOrderStatus($trackingNumber, $status, $reason);
-    }
-
-    public function getShippingLabel($trackingNumber)
-    {
-        return json_encode($this->moova->getShippingLabel($trackingNumber));
-    }
 
     private function getCarrier($order)
     {

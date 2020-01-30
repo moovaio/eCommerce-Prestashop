@@ -1,6 +1,6 @@
 <?php
 /**
- * 2007-2020 PrestaShop
+ * 2007-2020·PrestaShop PrestaShop
  *
  * NOTICE OF LICENSE
  *
@@ -23,26 +23,12 @@
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  *  International Registered Trademark & Property of PrestaShop SA
  */
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 
-require_once(dirname(__FILE__) . '/../../../config/config.inc.php');
-require_once(dirname(__FILE__) . '/../../../init.php');
-require_once(dirname(__FILE__) . '/../moova.php');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
 
-$context = Context::getContext();
-
-// Instance of module class
-$moova = new Moova();
-
-switch (Tools::getValue('action')) {
-    case 'processOrder':
-        echo $moova->processOrder(Tools::getValue('order'));
-        break;
-    case 'updateOrderStatus':
-        echo $moova->updateOrderStatus(Tools::getValue('trackingNumber'), 'READY', null);
-        break;
-    case 'getLabel':
-        echo $moova->getShippingLabel(Tools::getValue('trackingNumber'));
-        break;
-    default:
-        die('error');
-}
+header('Location: ../');
+exit;
