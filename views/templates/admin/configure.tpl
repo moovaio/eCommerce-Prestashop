@@ -56,7 +56,7 @@
 	<p>
 		&raquo; {l s='You can get a PDF documentation to configure this module' mod='moova'} :
 		<ul>
-			<li><a href="#" target="_blank">{l s='English' mod='moova'}</a></li>
+			<li><a href="https://moova.io/wp-content/uploads/2020/01/moova_prestashop_1.6-1.7.pdf" target="_blank">{l s='English' mod='moova'}</a></li>
 		</ul>
 	</p>
 </div>

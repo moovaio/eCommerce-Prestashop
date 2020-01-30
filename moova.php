@@ -435,7 +435,7 @@ class Moova extends CarrierModule
                         'desc' => $this->l('Special observation. Example: red door'),
                         'name' => 'MOOVA_ORIGIN_COMMENT',
                         'label' => $this->l('Description'),
-                        'required' => true
+                        'required' => false
                     ),
 
                 ),
