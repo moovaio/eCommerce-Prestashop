@@ -34,6 +34,8 @@ class Moova extends CarrierModule
 {
     protected $config_form = false;
     protected $ORDER_TAB = 'AdminOrderMoova';
+    protected $MOOVA_WEBHOOK = 'moovaApi';
+
     public function __construct()
     {
         $this->name = 'moova';
@@ -78,8 +80,6 @@ class Moova extends CarrierModule
         require_once(dirname(__FILE__) . '/sql/install.php');
 
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
-        Configuration::updateValue('MOOVA_KEY_AUTHENTICATION', $this->randKey(40));
-
         return parent::install() &&
             $this->installTab() &&
             $this->registerHook('moduleRoutes')  &&
@@ -176,20 +176,16 @@ class Moova extends CarrierModule
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
         ]]);
-
-        $this->context->smarty->assign('trackingNumber', $trackingNumber);
-        $status = $this->getStatusMoova($trackingNumber);
-
-        $this->context->smarty->assign('status', $status);
-
+        $status = $this->moova->getStatus($trackingNumber);
         $this->context->smarty->assign(array(
-            'token' => Tools::getAdminTokenLite($this->ORDER_TAB)
+            'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
+            'trackingNumber' => $trackingNumber,
+            'status' => $status
         ));
 
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
     }
-
 
     /**
      * Add the CSS & JavaScript files you want to be loaded in the BO.
@@ -200,18 +196,6 @@ class Moova extends CarrierModule
             $this->context->controller->addJquery();
             $this->context->controller->addJS($this->_path . 'views/js/back.js');
         }
-    }
-
-    /**
-     * displayAdminOrderRight
-     */
-    private function getStatusMoova($trackingNumber)
-    {
-        $trackingNumber = pSQL($trackingNumber);
-        $sql = "SELECT * FROM "
-            . _DB_PREFIX_ .
-            "moova_status where shipping_id='$trackingNumber' order by id_moova desc";
-        return Db::getInstance()->ExecuteS($sql);
     }
 
     /**
@@ -449,27 +433,6 @@ class Moova extends CarrierModule
                         'required' => true
                     ),
                     array(
-                        'type' => 'select',
-                        'label' => $this->l('Country:'),
-                        'desc' => $this->l('Only argentina and chile available'),
-                        'name' => 'MOOVA_ORIGIN_COUNTRY',
-                        'required' => true,
-                        'options' => array(
-                            'query' => array(
-                                array(
-                                    'id_option' => 'AR',
-                                    'name' => 'Argentina'
-                                ),
-                                array(
-                                    'id_option' => 'CHL',
-                                    'name' => 'Chile'
-                                ),
-                            ),
-                            'id' => 'id_option',
-                            'name' => 'name'
-                        )
-                    ),
-                    array(
                         'col' => 3,
                         'type' => 'text',
                         'desc' => $this->l('Special observation. Example: red door'),
@@ -496,7 +459,6 @@ class Moova extends CarrierModule
             'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
-            'MOOVA_ORIGIN_COUNTRY' => Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
             'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
             'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
             'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
@@ -642,22 +604,5 @@ class Moova extends CarrierModule
         } catch (Exception $e) {
             return false;
         }
-    }
-
-    public function hookModuleRoutes()
-    {
-        return array(
-            'module-moova-webhook' => array(
-                'controller' => 'webhook',
-                'rule' =>  'moova/webhook',
-                'keywords' => array(
-                    'id_customer'  => array('regexp' => '[0-9]+', 'param' => 'id_customer'),
-                ),
-                'params' => array(
-                    'fc' => 'module',
-                    'module' => 'moova',
-                )
-            )
-        );
     }
 }

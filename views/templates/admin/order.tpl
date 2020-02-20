@@ -32,6 +32,7 @@
         <a class="btn btn-default" id='moova_create_shipping'>
             <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
         </a>
+
         {/if} {if $trackingNumber} {if sizeof($status) == 0}
         <a class="btn btn-default" id='moova_inform_ready'>
             <i class="icon-truck"></i> {l s='Inform is Ready' mod='moova'}
@@ -56,20 +57,31 @@
                         </th>
                         <th></th>
                     </tr>
-                </thead>
-
-                <tbody>
+                </thead> 
+                <tbody> 
                     {foreach $status as $state}
-                    <tr>
-                        <td>{$state['status']|escape:'htmlall':'UTF-8'}</td>
-                         <td>{$state['date']|escape:'htmlall':'UTF-8'}</td>
+                    <tr> 
+                        <td> {l s=$state->status mod='moova'}</td>
+                         <td>{$state->createdAt|escape:'htmlall':'UTF-8'}</td> 
                     </tr>
                     {/foreach}
 
-                </tbody>
+                </tbody> 
             </table>
         </div>
+        <div style="display: none;"> 
+                <p>{l s="INCIDENCE" mod='moova'}</p>
+                <p>{l s="DRAFT" mod='moova'}</p>
+                <p>{l s="CONFIRMED" mod='moova'}</p> 
+                <p>{l s="WAITING" mod='moova'}</p> 
+                <p>{l s="READY" mod='moova'}</p> 
+                <p>{l s="CANCELED" mod='moova'}</p> 
+                <p>{l s="PICKEDUP" mod='moova'}</p>
+                <p>{l s="TOBERETURNED" mod='moova'}</p> 
+                <p>{l s="INTRANSIT" mod='moova'}</p> 
+                <p>{l s="RETURNED" mod='moova'}</p> 
+                <p>{l s="BLOCKED" mod='moova'}</p>
+        </div>
         <hr>
-
     </div>
 </div>

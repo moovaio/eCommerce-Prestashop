@@ -33,6 +33,17 @@ class MoovaSdk
         return $res->price;
     }
 
+
+    public function getStatus($id)
+    {
+        $res = $this->api->get("/shippings/$id");
+        if (!$res || !isset($res->statusHistory)) {
+            return [];
+        }
+        $res = json_decode(json_encode($res));
+        return $res->statusHistory;
+    }
+
     private function getOrderModel($to, $items)
     {
         $street = $this->getAddress($to->address1);
@@ -45,7 +56,7 @@ class MoovaSdk
                 'city' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
                 'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
                 'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
-                'country' => Configuration::get('MOOVA_ORIGIN_COUNTRY'),
+                'country' => $this->context->country->iso_code,
                 'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
                 "contact" => [
                     "firstName" => Configuration::get('MOOVA_ORIGIN_NAME', ''),
@@ -144,14 +155,6 @@ class MoovaSdk
             $payload['reason'] = $reason;
         }
         $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $payload);
-        if (!isset($res->id)) {
-            return false;
-        }
-        $orderId = pSQL($orderId);
-        $status = pSQL($status);
-        $date = pSQL($res->created_at);
-        $query = "INSERT INTO " . _DB_PREFIX_ . "moova_status (`shipping_id`, `date`, `status`) VALUES ('$orderId', '$date', '$status')";
-        Db::getInstance()->execute($query);
         return json_encode($res);
     }
 
