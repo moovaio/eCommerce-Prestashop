@@ -168,9 +168,9 @@ class Moova extends CarrierModule
         $order = Order::getOrderByCartId(Context::getContext()->cart->id);
         $orderCarrier = $this->getOrderCarrier($order);
         $carrier =  new Carrier($orderCarrier['id_carrier']);
-        $isMoovaCarrier =  $carrier->name ==='Moova' && $carrier->external_module_name ==='moova';
+        $isMoovaCarrier =  $carrier->name === 'Moova' && $carrier->external_module_name === 'moova';
 
-        if(!$isMoovaCarrier){
+        if (!$isMoovaCarrier) {
             return;
         }
 
@@ -179,7 +179,7 @@ class Moova extends CarrierModule
 
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
-        ]]); 
+        ]]);
         
         $this->context->smarty->assign(array(
             'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
@@ -621,7 +621,7 @@ class Moova extends CarrierModule
         $SOUTH_AMERICA = 6;
         $carrier->addZone($SOUTH_AMERICA);
     }
- 
+
 
     private function getOrderCarrier($order)
     {
