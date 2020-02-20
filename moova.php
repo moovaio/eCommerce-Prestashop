@@ -163,20 +163,24 @@ class Moova extends CarrierModule
 
     public function hookDisplayAdminOrderRight($param)
     {
-
-        //If create shipping
-        //Get everything i need
-        //Send it
         $this->context->controller->addJquery();
 
         $order = Order::getOrderByCartId(Context::getContext()->cart->id);
-        $carrier = $this->getCarrier($order);
-        $trackingNumber = $carrier ? $carrier['tracking_number'] : false;
+        $orderCarrier = $this->getOrderCarrier($order);
+        $carrier =  new Carrier($orderCarrier['id_carrier']);
+        $isMoovaCarrier =  $carrier->name ==='Moova' && $carrier->external_module_name ==='moova';
+
+        if(!$isMoovaCarrier){
+            return;
+        }
+
+        $trackingNumber = $orderCarrier ? $orderCarrier['tracking_number'] : false;
+        $status = $trackingNumber ? $this->moova->getStatus($trackingNumber) : [];
 
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
-        ]]);
-        $status = $this->moova->getStatus($trackingNumber);
+        ]]); 
+        
         $this->context->smarty->assign(array(
             'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
             'trackingNumber' => $trackingNumber,
@@ -591,9 +595,9 @@ class Moova extends CarrierModule
         $SOUTH_AMERICA = 6;
         $carrier->addZone($SOUTH_AMERICA);
     }
+ 
 
-
-    private function getCarrier($order)
+    private function getOrderCarrier($order)
     {
         try {
             $order = new Order($order);
