@@ -26,15 +26,6 @@
 
 $sql = array();
 
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'moova_status` (
-                                `id_moova` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                                 PRIMARY KEY(`id_moova`),
-                                `date`    DATETIME NOT NULL,
-                                `status`   VARCHAR(500) NOT NULL,
-                                `shipping_id` VARCHAR(500) NOT NULL
-                                ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8';
-
-
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {
         return false;
