@@ -437,6 +437,31 @@ class Moova extends CarrierModule
                         'required' => true
                     ),
                     array(
+                        'type' => 'select',
+                        'label' => $this->l('Country:'),
+                        'desc' => $this->l(''),
+                        'name' => 'MOOVA_ORIGIN_COUNTRY',
+                        'required' => true,
+                        'options' => array(
+                            'query' => array(
+                                array(
+                                    'id_option' => 'AR',
+                                    'name' => 'Argentina'
+                                ),
+                                array(
+                                    'id_option' => 'CL',
+                                    'name' => 'Chile'
+                                ),
+                                array(
+                                    'id_option' => 'UY',
+                                    'name' => 'Uruguay'
+                                ),
+                            ),
+                            'id' => 'id_option',
+                            'name' => 'name'
+                        )
+                    ),
+                    array(
                         'col' => 3,
                         'type' => 'text',
                         'desc' => $this->l('Special observation. Example: red door'),
@@ -463,6 +488,7 @@ class Moova extends CarrierModule
             'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
+            'MOOVA_ORIGIN_COUNTRY' => Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
             'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
             'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
             'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),

@@ -56,7 +56,7 @@ class MoovaSdk
                 'city' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
                 'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
                 'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
-                'country' => $this->context->country->iso_code,
+                'country' =>  Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
                 'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
                 "contact" => [
                     "firstName" => Configuration::get('MOOVA_ORIGIN_NAME', ''),
@@ -68,14 +68,14 @@ class MoovaSdk
             'to' => [
                 'street' => $street['street'],
                 'number' => $street['number'],
-                'floor' => $to->address2,
+                'floor' =>  isset($to->address2) ? $to->address2 : '' ,
                 'city' => $to->city,
                 'state' => $to->state,
                 'postalCode' => $to->postcode,
                 'country' => $to->country,
-                'instructions' => $to->other,
+                'instructions' =>  isset($to->other) ? $to->other : '',
             ],
-            'description' => $to->description,
+            'description' => isset($to->description) ? $to->description : '',
             'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
@@ -85,8 +85,6 @@ class MoovaSdk
             'flow' => 'manual',
         ];
     }
-
-
     private function getItems($items)
     {
         $formated = [];
