@@ -24,6 +24,7 @@ class MoovaSdk
      */
     public function getPrice($to, $items)
     {
+        if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
         $res = $this->api->post('/v2/budgets', $payload);
         if (!$res || !isset($res->budget_id)) {
@@ -68,9 +69,9 @@ class MoovaSdk
             'to' => [
                 'street' => $street['street'],
                 'number' => $street['number'],
-                'floor' =>  isset($to->address2) ? $to->address2 : '' ,
+                'floor' =>  isset($to->address2) ? $to->address2 : '',
                 'city' => $to->city,
-                'state' => $to->state,
+                'state' => isset($to->state) ? $to->state : $to->city,
                 'postalCode' => $to->postcode,
                 'country' => $to->country,
                 'instructions' =>  isset($to->other) ? $to->other : '',
@@ -110,6 +111,7 @@ class MoovaSdk
      */
     public function processOrder($to, $items, $contact)
     {
+        if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
         $payload['internalCode'] = $to->internalCode;
 
