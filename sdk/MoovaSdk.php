@@ -26,7 +26,7 @@ class MoovaSdk
     {
         if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
-        $res = $this->api->post('/v2/budgets', $payload);
+        $res = $this->api->post('/budgets/estimate', $payload);
         if (!$res || !isset($res->budget_id)) {
             return false;
         }
