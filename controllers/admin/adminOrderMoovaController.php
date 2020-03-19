@@ -68,7 +68,7 @@ class AdminOrderMoovaController extends ModuleAdminController
             $customer
         );
 
-        $carrier = pSQL($order->getIdOrderCarrier());
+        $carrier = pSQL($order->getIdOrderCarrier()); 
         $trackingNumber = pSQL($moovaOrder->id);
 
         $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$trackingNumber' WHERE id_order_carrier=$carrier";

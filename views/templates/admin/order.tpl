@@ -33,7 +33,7 @@
             <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
         </a>
 
-        {/if} {if $trackingNumber} {if sizeof($status) == 0}
+        {/if} {if $trackingNumber} {if sizeof($status) == 1}
         <a class="btn btn-default" id='moova_inform_ready'>
             <i class="icon-truck"></i> {l s='Inform is Ready' mod='moova'}
         </a>

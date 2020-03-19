@@ -76,7 +76,7 @@ class MoovaSdk
                 'country' => $to->country,
                 'instructions' =>  isset($to->other) ? $to->other : '',
             ],
-            'description' => isset($to->description) ? $to->description : '',
+            'description' => isset($to->description) ? (string) $to->description : '',
             'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
@@ -86,6 +86,7 @@ class MoovaSdk
             'flow' => 'manual',
         ];
     }
+
     private function getItems($items)
     {
         $formated = [];

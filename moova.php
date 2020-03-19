@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2020·PrestaShop PrestaShop
  *
@@ -35,13 +36,13 @@ class Moova extends CarrierModule
     protected $config_form = false;
     protected $ORDER_TAB = 'AdminOrderMoova';
     protected $MOOVA_WEBHOOK = 'moovaApi';
-
+    public $id_carrier;
     public function __construct()
     {
         $this->name = 'moova';
         $this->tab = 'shipping_logistics';
         $this->author = 'Moova.io';
-        $this->version = '1.0.3';
+        $this->version = '1.0.4';
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->author = 'Moova.io';
         $this->need_instance = 0;
@@ -180,7 +181,7 @@ class Moova extends CarrierModule
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
         ]]);
-        
+
         $this->context->smarty->assign(array(
             'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
             'trackingNumber' => $trackingNumber,
@@ -216,7 +217,8 @@ class Moova extends CarrierModule
             $this->postProcess();
             $configForm = $this->getConfigForm();
             $originForm = $this->getOriginForm();
-            $fields = [$configForm, $originForm];
+            $freeShipping = $this->getFreeShippingForm();
+            $fields = [$configForm, $originForm,$freeShipping];
             $message = $this->validateformIsComplete($fields);
         }
         $this->context->smarty->assign('message', $message);
@@ -267,7 +269,7 @@ class Moova extends CarrierModule
             'id_language' => $this->context->language->id,
         );
 
-        return $helper->generateForm([$this->getConfigForm(), $this->getOriginForm()]);
+        return $helper->generateForm([$this->getConfigForm(), $this->getOriginForm(), $this->getFreeShippingForm()]);
     }
 
     /**
@@ -478,6 +480,62 @@ class Moova extends CarrierModule
         );
     }
 
+    protected function getFreeShippingForm()
+    {
+        return array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->l('Free Shipping'),
+                    'icon' => 'mi-payment',
+                ),
+
+                'input' => array(
+                    array(
+                        'col' => 3,
+                        'type' => 'text',
+                        'desc' => $this->l('Min price'),
+                        'prefix'=>'$',
+                        'name' => 'MOOVA_MIN_PRICE',
+                        'label' => $this->l('Min price'),
+                        'required' => false
+                    ),
+                    array(
+                        'col' => 3,
+                        'type' => 'text',
+                        'desc' => $this->l('Weight'),
+                        'name' => 'MOOVA_MIN_WEIGHT',
+                        'suffix'=>'KG',
+                        'label' => $this->l('Weight'),
+                        'required' => false
+                    ), 
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Free shipping'),
+                        'name' => 'MOOVA_FREE_SHIPPING',
+                        'is_bool' => true,
+                        'desc' => $this->l('Enable minimum for free shipping'),
+                        'values' => array(
+                            array(
+                                'id' => 'active_on',
+                                'value' => true,
+                                'label' => $this->l('Enabled')
+                            ),
+                            array(
+                                'id' => 'active_off',
+                                'value' => false,
+                                'label' => $this->l('Disabled')
+                            )
+                        ),
+                    ),
+
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                ),
+            ),
+        );
+    }
+
     /**
      * Set values for the inputs.
      */
@@ -500,9 +558,25 @@ class Moova extends CarrierModule
             'MOOVA_ORIGIN_APARTMENT' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
             'MOOVA_ORIGIN_CITY' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
             'MOOVA_ORIGIN_STATE' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
-            'MOOVA_ORIGIN_POSTAL_CODE' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', '')
-
+            'MOOVA_ORIGIN_POSTAL_CODE' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
+            'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
+            'MOOVA_MIN_WEIGHT' => Configuration::get('MOOVA_MIN_WEIGHT', ''),
+            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
         );
+    }
+    
+    public function getDestination($cart)
+    {
+        $id_address_delivery = $cart->id_address_delivery;
+        $destination = new Address($id_address_delivery);
+        $country = new Country($destination->id_country);
+        $currency = new Currency($cart->id_currency);
+        $state = new State($destination->id_state);
+
+        $destination->country = $country->iso_code;
+        $destination->currency = $currency->iso_code;
+        $destination->state = $state->name;
+        return $destination;
     }
 
     private function randKey($length)
@@ -527,37 +601,21 @@ class Moova extends CarrierModule
 
     public function getOrderShippingCost($cart, $shipping_cost)
     {
-        if (Context::getContext()->customer->logged == true) {
-            $cart = Context::getContext()->cart;
-            $destination = $this->getDestination($cart);
-            $products = Context::getContext()->cart->getProducts(true);
+        $controller = $this->getHookController('getOrderShippingCost');
+        return $controller->run($cart, $shipping_cost);
+    }
 
-            $price = $this->moova->getPrice(
-                $destination,
-                $products
-            );
-            return $price;
-        }
-        return false;
+    public function getHookController($hook_name)
+    {
+        require_once(dirname(__FILE__) . '/controllers/hook/' . $hook_name . '.php');
+        $controller_name = $this->name . $hook_name . 'Controller';
+        $controller = new $controller_name($this, __FILE__, $this->_path);
+        return $controller;
     }
 
     public function getOrderShippingCostExternal($params)
     {
-        return  false;
-    }
-
-    public function getDestination($cart)
-    {
-        $id_address_delivery = $cart->id_address_delivery;
-        $destination = new Address($id_address_delivery);
-        $country = new Country($destination->id_country);
-        $currency = new Currency($cart->id_currency);
-        $state = new State($destination->id_state);
-
-        $destination->country = $country->iso_code;
-        $destination->currency = $currency->iso_code;
-        $destination->state = $state->name;
-        return $destination;
+        return $this->getOrderShippingCost($params, 0);
     }
 
     protected function addCarrier()
@@ -568,10 +626,10 @@ class Moova extends CarrierModule
         $carrier->is_module = true;
         $carrier->url = 'https://dashboard.moova.io/external?id=@';
         $carrier->active = 1;
-        $carrier->range_behavior = 1;
-        $carrier->need_range = 1;
-        $carrier->shipping_external = true;
         $carrier->range_behavior = 0;
+        $carrier->shipping_handling = false;
+        $carrier->need_range = true;
+        $carrier->shipping_external = true;
         $carrier->external_module_name = $this->name;
         $carrier->shipping_method = 2;
 
