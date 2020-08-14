@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2020 PrestaShop
  *
@@ -27,7 +28,7 @@
 include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 include_once(_PS_MODULE_DIR_ . '/moova/moova.php');
 
-class AdminOrderMoovaController extends ModuleAdminController
+class AdminMoovaOrderController extends ModuleAdminController
 {
     public function __construct()
     {
@@ -41,6 +42,10 @@ class AdminOrderMoovaController extends ModuleAdminController
     {
         $trackingNumber = Tools::getValue('trackingNumber');
         echo $this->MoovaSDK->updateOrderStatus($trackingNumber, 'READY', null);
+    }
+
+    public function ajaxProcessAutocomplete()
+        echo json_encode($this->MoovaSDK->getAutocomplete(Tools::getValue('query')));
     }
 
     public function ajaxProcessLabel()
@@ -68,7 +73,7 @@ class AdminOrderMoovaController extends ModuleAdminController
             $customer
         );
 
-        $carrier = pSQL($order->getIdOrderCarrier()); 
+        $carrier = pSQL($order->getIdOrderCarrier());
         $trackingNumber = pSQL($moovaOrder->id);
 
         $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$trackingNumber' WHERE id_order_carrier=$carrier";

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2020 PrestaShop
  *
@@ -26,7 +27,7 @@
 
 abstract class ApiConnector
 {
-    protected function exec(string $method, string $url, array $data, array $headers)
+    protected function exec($method,  $url, array $data, array $headers)
     {
         $curl = curl_init();
 
@@ -64,7 +65,7 @@ abstract class ApiConnector
         return json_decode($result);
     }
 
-    public function get(string $endpoint, array $body = [], array $headers = [])
+    public function get($endpoint, array $body = [], array $headers = [])
     {
         $url = $this->getBaseUrl() . $endpoint;
         if (!empty($body)) {
@@ -73,19 +74,19 @@ abstract class ApiConnector
         return $this->exec('GET', $url, [], $headers);
     }
 
-    public function post(string $endpoint, array $body = [], array $headers = [])
+    public function post($endpoint, array $body = [], array $headers = [])
     {
         $url = $this->getBaseUrl() . $endpoint;
         return $this->exec('POST', $url, $body, $headers);
     }
 
-    public function put(string $endpoint, array $body = [], array $headers = [])
+    public function put($endpoint, array $body = [], array $headers = [])
     {
         $url = $this->getBaseUrl() . $endpoint;
         return $this->exec('PUT', $url, $body, $headers);
     }
 
-    public function delete(string $endpoint, array $body = [], array $headers = [])
+    public function delete($endpoint, array $body = [], array $headers = [])
     {
         $url = $this->getBaseUrl() . $endpoint;
         return $this->exec('DELETE', $url, $body, $headers);

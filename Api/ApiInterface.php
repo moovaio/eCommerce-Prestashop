@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2020·PrestaShop PrestaShop
  *
@@ -26,8 +27,8 @@
 
 interface ApiInterface
 {
-    public function get(string $endpoint, array $body = [], array $headers = []);
-    public function post(string $endpoint, array $body = [], array $headers = []);
-    public function put(string $endpoint, array $body = [], array $headers = []);
-    public function delete(string $endpoint, array $body = [], array $headers = []);
+    public function get($endpoint, array $body = [], array $headers = []);
+    public function post($endpoint, array $body = [], array $headers = []);
+    public function put($endpoint, array $body = [], array $headers = []);
+    public function delete($endpoint, array $body = [], array $headers = []);
 }

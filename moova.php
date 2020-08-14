@@ -34,9 +34,10 @@ include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 class Moova extends CarrierModule
 {
     protected $config_form = false;
-    protected $ORDER_TAB = 'AdminOrderMoova';
+    protected $ORDER_TAB = 'AdminMoovaOrderController';
     protected $MOOVA_WEBHOOK = 'moovaApi';
     public $id_carrier;
+
     public function __construct()
     {
         $this->name = 'moova';
@@ -48,7 +49,6 @@ class Moova extends CarrierModule
         $this->need_instance = 0;
         $this->moova = new MoovaSdk();
         $this->controllers = array('dpage');
-
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
          */
@@ -82,7 +82,7 @@ class Moova extends CarrierModule
 
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
         return parent::install() &&
-            $this->installTab() &&
+            $this->installAdminControllers() &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
@@ -90,23 +90,45 @@ class Moova extends CarrierModule
             $this->registerHook('displayAdminOrderRight');
     }
 
-    private function installTab()
+    public function getAdminControllers()
     {
-        $tabId = (int) Tab::getIdFromClassName($this->ORDER_TAB);
-        if (!$tabId) {
-            $tabId = null;
+        return [
+            [
+                'class_name' => 'AdminMoovaSetupController',
+                'active' => true
+            ], [
+                'class_name' => 'AdminMoovaOrderController',
+                'active' => true
+            ],
+        ];
+    }
+    /**
+     * Add Tabs for our ModuleAdminController
+     *
+     * @return bool
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public function installAdminControllers()
+    {
+        $result = true;
+
+        foreach ($this->getAdminControllers() as $tabData) {
+            if (Tab::getIdFromClassName($tabData['class_name'])) {
+                continue;
+            }
+            $tab = new Tab();
+            $tab->class_name = $tabData['class_name'];
+            $tab->module = $this->name;
+
+            foreach (Language::getLanguages(false) as $language) {
+                $tab->name[$language['id_lang']] = $tabData['name']['en'];
+            }
+
+            $tab->active = $tabData['active'];
         }
 
-        $tab = new Tab($tabId);
-        $tab->active = 0;
-
-        $tab->name = array();
-        foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = $this->ORDER_TAB;
-        }
-        $tab->class_name = $this->ORDER_TAB;
-        $tab->module = $this->name;
-        return $tab->save();
+        return $result;
     }
 
     public function uninstall()
@@ -117,14 +139,14 @@ class Moova extends CarrierModule
 
     private function uninstallTab()
     {
-        $tabId = (int) Tab::getIdFromClassName($this->ORDER_TAB);
-
-        if (!$tabId) {
-            return true;
+        foreach ($this->getAdminControllers() as $tabData) {
+            $tabId = Tab::getIdFromClassName($tabData['class_name']);
+            if (!$tabId) {
+                continue;
+            }
+            $tab = new Tab($tabId);
+            return $tab->delete();
         }
-        $tab = new Tab($tabId);
-
-        return $tab->delete();
     }
 
     public function addOrderState($name)
@@ -160,7 +182,6 @@ class Moova extends CarrierModule
 
         return true;
     }
-
 
     public function hookDisplayAdminOrderRight($param)
     {
@@ -208,25 +229,7 @@ class Moova extends CarrierModule
      */
     public function getContent()
     {
-        /**
-         * If values have been submitted in the form, process.
-         */
-        $message = ['status' => 'waiting'];
-        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
-        if ($showMessage) {
-            $this->postProcess();
-            $configForm = $this->getConfigForm();
-            $originForm = $this->getOriginForm();
-            $freeShipping = $this->getFreeShippingForm();
-            $fields = [$configForm, $originForm,$freeShipping];
-            $message = $this->validateformIsComplete($fields);
-        }
-        $this->context->smarty->assign('message', $message);
-
-        $this->context->smarty->assign('module_dir', $this->_path);
-        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-
-        return $output . $this->renderForm();
+        return Tools::redirectAdmin($this->context->link->getAdminLink('AdminMoovaSetup'));
     }
 
     private function validateformIsComplete($forms)
@@ -244,327 +247,6 @@ class Moova extends CarrierModule
         }
     }
 
-    /**
-     * Create the form that will be displayed in the configuration of your module.
-     */
-    protected function renderForm()
-    {
-        $helper = new HelperForm();
-
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitMoovaModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
-        );
-
-        return $helper->generateForm([$this->getConfigForm(), $this->getOriginForm(), $this->getFreeShippingForm()]);
-    }
-
-    /**
-     * Create the structure of your form.
-     */
-    protected function getConfigForm()
-    {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Settings'),
-                    'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'MOOVA_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode. ' .
-                            'Remember app id and key are different in production'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Enter the app id'),
-                        'name' => 'MOOVA_APP_ID',
-                        'label' => $this->l('App id'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'name' => 'MOOVA_APP_KEY',
-                        'label' => $this->l('App key'),
-                        'desc' => $this->l('Enter the app key'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'name' => 'MOOVA_KEY_AUTHENTICATION',
-                        'label' => $this->l('App authentication'),
-                        'desc' => $this->l('Save this key and put it in Moova.io'),
-                        'required' => true
-                    )
-
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
-    }
-
-
-    /**
-     * Get address config
-     */
-    protected function getOriginForm()
-    {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Origin address'),
-                    'icon' => 'icon-home',
-                ),
-
-                'input' => array(
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Name'),
-                        'name' => 'MOOVA_ORIGIN_NAME',
-                        'label' => $this->l('Name'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Surname'),
-                        'name' => 'MOOVA_ORIGIN_SURNAME',
-                        'label' => $this->l('Surname'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('email'),
-                        'name' => 'MOOVA_ORIGIN_EMAIL',
-                        'label' => $this->l('Email'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('phone'),
-                        'name' => 'MOOVA_ORIGIN_PHONE',
-                        'label' => $this->l('Phone'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Street'),
-                        'name' => 'MOOVA_ORIGIN_STREET',
-                        'label' => $this->l('Street'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Number'),
-                        'name' => 'MOOVA_ORIGIN_NUMBER',
-                        'label' => $this->l('Number'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Floor'),
-                        'name' => 'MOOVA_ORIGIN_FLOOR',
-                        'label' => $this->l('Floor'),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Apartment'),
-                        'name' => 'MOOVA_ORIGIN_APARTMENT',
-                        'label' => $this->l('Apartment'),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('City'),
-                        'name' => 'MOOVA_ORIGIN_CITY',
-                        'label' => $this->l('City'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('State'),
-                        'name' => 'MOOVA_ORIGIN_STATE',
-                        'label' => $this->l('State'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Postal code'),
-                        'name' => 'MOOVA_ORIGIN_POSTAL_CODE',
-                        'label' => $this->l('Postal Code'),
-                        'required' => true
-                    ),
-                    array(
-                        'type' => 'select',
-                        'label' => $this->l('Country:'),
-                        'desc' => $this->l(''),
-                        'name' => 'MOOVA_ORIGIN_COUNTRY',
-                        'required' => true,
-                        'options' => array(
-                            'query' => array(
-                                array(
-                                    'id_option' => 'AR',
-                                    'name' => 'Argentina'
-                                ),
-                                array(
-                                    'id_option' => 'CL',
-                                    'name' => 'Chile'
-                                ),
-                                array(
-                                    'id_option' => 'UY',
-                                    'name' => 'Uruguay'
-                                ),
-                            ),
-                            'id' => 'id_option',
-                            'name' => 'name'
-                        )
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Special observation. Example: red door'),
-                        'name' => 'MOOVA_ORIGIN_COMMENT',
-                        'label' => $this->l('Description'),
-                        'required' => false
-                    ),
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
-    }
-
-    protected function getFreeShippingForm()
-    {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Free Shipping'),
-                    'icon' => 'mi-payment',
-                ),
-
-                'input' => array(
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Min price'),
-                        'prefix'=>'$',
-                        'name' => 'MOOVA_MIN_PRICE',
-                        'label' => $this->l('Min price'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Weight'),
-                        'name' => 'MOOVA_MIN_WEIGHT',
-                        'suffix'=>'KG',
-                        'label' => $this->l('Weight'),
-                        'required' => false
-                    ), 
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Free shipping'),
-                        'name' => 'MOOVA_FREE_SHIPPING',
-                        'is_bool' => true,
-                        'desc' => $this->l('Enable minimum for free shipping'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
-    }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-        return array(
-            'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
-            'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
-            'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
-            'MOOVA_ORIGIN_COUNTRY' => Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
-            'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
-            'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
-            'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
-            'MOOVA_ORIGIN_EMAIL' => Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
-            'MOOVA_ORIGIN_COMMENT' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
-            'MOOVA_ORIGIN_STREET' => Configuration::get('MOOVA_ORIGIN_STREET', ''),
-            'MOOVA_ORIGIN_NUMBER' => Configuration::get('MOOVA_ORIGIN_NUMBER', ''),
-            'MOOVA_ORIGIN_FLOOR' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
-            'MOOVA_ORIGIN_APARTMENT' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
-            'MOOVA_ORIGIN_CITY' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
-            'MOOVA_ORIGIN_STATE' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
-            'MOOVA_ORIGIN_POSTAL_CODE' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
-            'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
-            'MOOVA_MIN_WEIGHT' => Configuration::get('MOOVA_MIN_WEIGHT', ''),
-            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
-        );
-    }
-    
     public function getDestination($cart)
     {
         $id_address_delivery = $cart->id_address_delivery;
@@ -579,14 +261,6 @@ class Moova extends CarrierModule
         return $destination;
     }
 
-    private function randKey($length)
-    {
-        $random = '';
-        for ($i = 0; $i < $length; $i++) {
-            $random .= chr(mt_rand(33, 126));
-        }
-        return $random;
-    }
     /**
      * Save form data.
      */

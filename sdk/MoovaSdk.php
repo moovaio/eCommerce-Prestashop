@@ -7,10 +7,11 @@ class MoovaSdk
     private $api;
     public function __construct()
     {
+        $liveMode = Configuration::get('MOOVA_LIVE_MODE') == true ? true : false;
         $this->api = new MoovaApi(
             Configuration::get('MOOVA_APP_ID', ''),
             Configuration::get('MOOVA_APP_KEY', ''),
-            Configuration::get('MOOVA_LIVE_MODE', false) ?? false
+            $liveMode
         );
     }
 
@@ -26,7 +27,7 @@ class MoovaSdk
     {
         if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
-        $res = $this->api->post('/budgets/estimate', $payload);
+        $res = $this->api->post('/b2b/budgets/estimate', $payload);
         if (!$res || !isset($res->budget_id)) {
             return false;
         }
@@ -37,7 +38,7 @@ class MoovaSdk
 
     public function getStatus($id)
     {
-        $res = $this->api->get("/shippings/$id");
+        $res = $this->api->get("/b2b/shippings/$id");
         if (!$res || !isset($res->statusHistory)) {
             return [];
         }
@@ -122,19 +123,19 @@ class MoovaSdk
             "email" =>   $contact->email,
             "phone" => $to->phone
         ];
-        $res = $this->api->post('/shippings', $payload);
+        $res = $this->api->post('/b2b/shippings', $payload);
         return $res;
     }
 
     /**
      * Gets the shipping label url for a Moova Shipment
      *
-     * @param string $order_id
+     * @param  $order_id
      * @return array|false
      */
-    public function getShippingLabel(string $orderId)
+    public function getShippingLabel($orderId)
     {
-        $res = $this->api->get("/shippings/$orderId/label");
+        $res = $this->api->get("/b2b/shippings/$orderId/label");
         if (!isset($res->label)) {
             return false;
         }
@@ -144,18 +145,18 @@ class MoovaSdk
     /**
      * Updates the order status in Moova
      *
-     * @param string $orderId
-     * @param string $status
-     * @param string $reason
+     * @param  $orderId
+     * @param  $status
+     * @param  $reason
      * @return false|array
      */
-    public function updateOrderStatus(string $orderId, string $status, $reason = null)
+    public function updateOrderStatus($orderId,  $status, $reason = null)
     {
         $payload = [];
         if ($reason) {
             $payload['reason'] = $reason;
         }
-        $res = $this->api->post('/shippings/' . $orderId . '/' . strtolower($status), $payload);
+        $res = $this->api->post('/b2b/shippings/' . $orderId . '/' . strtolower($status), $payload);
         return json_encode($res);
     }
 
@@ -171,5 +172,16 @@ class MoovaSdk
             $street_number = trim($line1[2]);
         }
         return array('street' => $street_name, 'number' => $street_number);
+    }
+
+    /**
+     * Gets the autocomplete
+     *
+     * @param  $order_id
+     * @return array|false
+     */
+    public function getAutocomplete($query)
+    {
+        return $this->api->get("/autocomplete", ["query" => $query]);
     }
 }
