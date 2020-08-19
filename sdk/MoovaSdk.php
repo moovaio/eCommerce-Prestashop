@@ -51,14 +51,10 @@ class MoovaSdk
         $street = $this->getAddress($to->address1);
         return [
             'from' => [
-                'street' => Configuration::get('MOOVA_ORIGIN_STREET', ''),
-                'number' => Configuration::get('MOOVA_ORIGIN_NUMBER', ''),
+                'address' => Configuration::get('MOOVA_ORIGIN_ADDRESS', ''),
+                'googlePlaceId' => Configuration::get('MOOVA_ORIGIN_GOOGLE_PLACE_ID', ''),
                 'floor' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
                 'apartment' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
-                'city' => Configuration::get('MOOVA_ORIGIN_CITY', ''),
-                'state' => Configuration::get('MOOVA_ORIGIN_STATE', ''),
-                'postalCode' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
-                'country' =>  Configuration::get('MOOVA_ORIGIN_COUNTRY', ''),
                 'instructions' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
                 "contact" => [
                     "firstName" => Configuration::get('MOOVA_ORIGIN_NAME', ''),
@@ -73,7 +69,7 @@ class MoovaSdk
                 'floor' =>  isset($to->address2) ? $to->address2 : '',
                 'city' => $to->city,
                 'state' => isset($to->state) ? $to->state : $to->city,
-                'postalCode' => $to->postcode,
+                'postalCode' => isset($to->postcode) ? $to->postcode : null,
                 'country' => $to->country,
                 'instructions' =>  isset($to->other) ? $to->other : '',
             ],
