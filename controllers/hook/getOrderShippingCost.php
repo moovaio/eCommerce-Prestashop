@@ -25,24 +25,32 @@ class MoovaGetOrderShippingCostController
             );
             if ($price === false) return false;
             $totalPrice = $price + $shipping_fees;
-            return $this->getRangePrice($totalPrice,$cart);
+            return $this->getRangePrice($totalPrice, $cart);
         }
         return false;
     }
 
-    private function getRangePrice($price,$cart)
+    private function getRangePrice($price, $cart)
     {
-        if(Configuration::get('MOOVA_FREE_SHIPPING', '')){ 
-            $minPrice  = Configuration::get('MOOVA_MIN_PRICE', '');
-            $minWeight = Configuration::get('MOOVA_MIN_WEIGHT', '');
+        if (Configuration::get('MOOVA_FREE_SHIPPING', '')) {
+            $minPrice  = Configuration::get('MOOVA_MIN_FREE_SHIPPING_PRICE', '');
 
-            if($cart->getOrderTotal(false, 1) > $minPrice && $minPrice>0 ){
+            if ($cart->getOrderTotal(false, 1) > $minPrice && $minPrice > 0) {
                 return 0;
             }
+        }
 
-            if($cart->getTotalWeight() > $minWeight && $minWeight>0 ){
-                return 0;
+
+        $specialPricing = Configuration::get('SPECIAL_PRICING_OPTIONS', 'default');
+        if ($specialPricing == 'range') {
+            if ($price < Configuration::get('MOOVA_MIN_PRICE', 0)) {
+                return Configuration::get('MOOVA_MIN_PRICE', 0);
             }
+            if ($price > Configuration::get('MOOVA_MAX_PRICE', 0)) {
+                return Configuration::get('MOOVA_MAX_PRICE', 0);
+            }
+        } else if ($specialPricing == 'fixed') {
+            return Configuration::get('MOOVA_FIXED_PRICE', 'default');
         }
         return $price;
     }

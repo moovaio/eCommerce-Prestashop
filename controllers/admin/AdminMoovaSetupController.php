@@ -39,9 +39,13 @@ class AdminMoovaSetupController extends ModuleAdminController
 
     public function init()
     {
+        if (\Tools::isSubmit($this->controller_name . '_config')) {
+            $this->postProcess();
+        }
         $this->initConfigForm();
         $this->initOriginForm();
         $this->initFreeShippingForm();
+        $this->initSpecialPricingForm();
         parent::init();
     }
 
@@ -49,38 +53,25 @@ class AdminMoovaSetupController extends ModuleAdminController
     {
         parent::initContent();
 
-        $this->context->smarty->assign('message', ["status" => "ok"]);
+        $message = \Tools::isSubmit($this->controller_name . '_config') ? $this->validateformIsComplete() : ['status' => 'waiting'];
+        $this->context->smarty->assign('message', $message);
         $this->context->controller->addJqueryUi('ui.autocomplete');
-        $this->context->controller->addJS(_PS_MODULE_DIR_ . $this->module->name . 'views/js/settings.js');
+        $this->context->controller->addJS("/modules/{$this->module->name}/views/js/settings.js");
         $this->context->smarty->assign(
             array(
                 'token' => Tools::getAdminTokenLite($this->controller_name)
             )
         );
 
-        $this->context->smarty->assign("module_dir", _PS_MODULE_DIR_ . $this->module->name);
+
+        $this->context->smarty->assign("module_dir", "/modules/{$this->module->name}");
 
         $output = $this->context->smarty->fetch(_PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/configure.tpl');
-
-        $form = $output . $this->renderForm();
-        $this->context->smarty->assign('content', $form);
-        $this->context->smarty->assign($form);
+        $renderedForm = $this->renderForm();
+        $this->context->smarty->assign('content',  $output . $renderedForm);
     }
-    /*
 
-        $message = ['status' => 'waiting'];
-        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
-        $form = $this->renderForm($this->getOriginForm());
-        $this->context->smarty->assign($form);
-        */
-    /*if ($showMessage) {
-            $this->postProcess();
-            $message = $this->validateformIsComplete($form);
-        }
 
-        
-    }
-*/
     public function renderForm($fields_form = null)
     {
         if ($fields_form === null) {
@@ -271,7 +262,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'type' => 'text',
                     'desc' => $this->l('Min price'),
                     'prefix' => '$',
-                    'name' => 'MOOVA_MIN_PRICE',
+                    'name' => 'MOOVA_MIN_FREE_SHIPPING_PRICE',
                     'label' => $this->l('Min price'),
                     'required' => false
                 ),
@@ -303,47 +294,73 @@ class AdminMoovaSetupController extends ModuleAdminController
 
         $values = [
             'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
-            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
+            'MOOVA_MIN_FREE_SHIPPING_PRICE' => Configuration::get('MOOVA_MIN_FREE_SHIPPING_PRICE', '')
         ];
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
     }
 
     protected function initSpecialPricingForm()
     {
+        $options = array(
+            array(
+                'key' => 'default',
+                'name' => 'Default'
+            ),
+            array(
+                'key' => 'range',
+                'name' => 'Range'
+            ),
+            array(
+                'key' => 'fixed',
+                'name' => 'Fixed'
+            ),
+        );
+
         $this->fields_form[]['form'] = [
             'legend' => array(
-                'title' => $this->l('Free Shipping'),
+                'title' => $this->l('Special Price'),
                 'icon' => 'mi-payment',
             ),
-
             'input' => array(
+                array(
+                    'type' => 'select',
+                    'lang' => true,
+                    'label' => $this->l('Pricing options'),
+                    'name' => 'SPECIAL_PRICING_OPTIONS',
+                    'desc' => $this->l('Select between range, fixed price or the default pricing'),
+                    'options' => array(
+                        'query' => $options,
+                        'id' => 'key',
+                        'name' => 'name'
+                    )
+                ),
+
                 array(
                     'col' => 3,
                     'type' => 'text',
-                    'desc' => $this->l('Min price'),
+                    'desc' => $this->l('Minimum price'),
                     'prefix' => '$',
                     'name' => 'MOOVA_MIN_PRICE',
                     'label' => $this->l('Min price'),
                     'required' => false
                 ),
                 array(
-                    'type' => 'switch',
-                    'label' => $this->l('Free shipping'),
-                    'name' => 'MOOVA_FREE_SHIPPING',
-                    'is_bool' => true,
-                    'desc' => $this->l('Enable minimum for free shipping'),
-                    'values' => array(
-                        array(
-                            'id' => 'active_on',
-                            'value' => true,
-                            'label' => $this->l('Enabled')
-                        ),
-                        array(
-                            'id' => 'active_off',
-                            'value' => false,
-                            'label' => $this->l('Disabled')
-                        )
-                    ),
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Maximum price'),
+                    'prefix' => '$',
+                    'name' => 'MOOVA_MAX_PRICE',
+                    'label' => $this->l('Maximum price'),
+                    'required' => false
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Fixed price'),
+                    'prefix' => '$',
+                    'name' => 'MOOVA_FIXED_PRICE',
+                    'label' => $this->l('Fixed price'),
+                    'required' => false
                 ),
 
             ),
@@ -353,9 +370,41 @@ class AdminMoovaSetupController extends ModuleAdminController
         ];
 
         $values = [
-            'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
-            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
+            'SPECIAL_PRICING_OPTIONS' => Configuration::get('SPECIAL_PRICING_OPTIONS', 'default'),
+            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', ''),
+            'MOOVA_MAX_PRICE' => Configuration::get('MOOVA_MAX_PRICE', ''),
+            'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', '')
         ];
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    /**
+     * Save form data.
+     */
+    public function postProcess()
+    {
+        $result = true;
+
+        foreach (\Tools::getAllValues() as $fieldName => $fieldValue) {
+            Configuration::updateValue($fieldName, pSQL($fieldValue));
+        }
+
+        return $result;
+    }
+
+    private function validateformIsComplete()
+    {
+
+        foreach ($this->fields_form as $form) {
+            $forms = $form['form']['input'];
+            foreach ($forms as $item) {
+                if ((isset($item['required']) && $item['required'] == 1)) {
+                    if (!Configuration::get($item['name'])) {
+                        return ["status" => 'error', 'field' => $item['label']];
+                    }
+                }
+            }
+            return ["status" => 'success'];
+        }
     }
 }

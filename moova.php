@@ -237,21 +237,6 @@ class Moova extends CarrierModule
         return Tools::redirectAdmin($this->context->link->getAdminLink('AdminMoovaSetup'));
     }
 
-    private function validateformIsComplete($forms)
-    {
-        foreach ($forms as $form) {
-            $forms = $form['form']['input'];
-            foreach ($forms as $item) {
-                if ((isset($item['required']) && $item['required'] == 1)) {
-                    if (!Configuration::get($item['name'])) {
-                        return ["status" => 'error', 'field' => $item['label']];
-                    }
-                }
-            }
-            return ["status" => 'success'];
-        }
-    }
-
     public function getDestination($cart)
     {
         $id_address_delivery = $cart->id_address_delivery;
@@ -264,18 +249,6 @@ class Moova extends CarrierModule
         $destination->currency = $currency->iso_code;
         $destination->state = $state->name;
         return $destination;
-    }
-
-    /**
-     * Save form data.
-     */
-    protected function postProcess()
-    {
-        $form_values = $this->getConfigFormValues();
-
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
-        }
     }
 
     public function getOrderShippingCost($cart, $shipping_cost)

@@ -47,29 +47,24 @@ $(document).ready(function () {
     });
   }
 
-  function showFreeShipping() {
-    if ($("#has_free_shipping").val() == "0") {
-      $("#free_shipping_price").closest("tr").hide();
-    } else {
-      $("#free_shipping_price").closest("tr").show();
-    }
-  }
-
   function showSpecialPricing() {
-    $("#fixed_price").closest("tr").hide();
-    $("#min_price").closest("tr").hide();
-    $("#max_price").closest("tr").hide();
+    $("#MOOVA_FIXED_PRICE").closest(".form-group").hide();
+    $("#MOOVA_MIN_PRICE").closest(".form-group").hide();
+    $("#MOOVA_MAX_PRICE").closest(".form-group").hide();
 
-    var specialPrice = $("#has_special_price").val();
+    var specialPrice = $("#SPECIAL_PRICING_OPTIONS").val();
     if (specialPrice == "fixed") {
-      $("#fixed_price").closest("tr").show();
+      $("#MOOVA_FIXED_PRICE").closest(".form-group").show();
     } else if (specialPrice == "range") {
-      $("#min_price").closest("tr").show();
-      $("#max_price").closest("tr").show();
+      $("#MOOVA_MIN_PRICE").closest(".form-group").show();
+      $("#MOOVA_MAX_PRICE").closest(".form-group").show();
     }
   }
 
-  $("#MOOVA_ORIGIN_STREET").autocomplete({
+  $("#MOOVA_ORIGIN_ADDRESS").autocomplete({
+    delay: 50,
+    minChars: 3,
+    autoFill: false,
     source: function (request, response) {
       return autocomplete(request, response);
     },
@@ -79,10 +74,8 @@ $(document).ready(function () {
       return false;
     },
   });
-  /*
-  $("#google_place_id").closest("tr").hide();
-  $("#has_free_shipping").change(showFreeShipping);
-  $("#has_special_price").change(showSpecialPricing);
-  showFreeShipping();
-  showSpecialPricing();*/
+
+  $("#MOOVA_ORIGIN_GOOGLE_PLACE_ID").closest(".form-group").hide();
+  $("#SPECIAL_PRICING_OPTIONS").change(showSpecialPricing);
+  showSpecialPricing();
 });
