@@ -39,9 +39,9 @@ class AdminMoovaSetupController extends ModuleAdminController
 
     public function init()
     {
-        $this->fields_form['form']['form'] = [];
         $this->initConfigForm();
         $this->initOriginForm();
+        $this->initFreeShippingForm();
         parent::init();
     }
 
@@ -57,7 +57,9 @@ class AdminMoovaSetupController extends ModuleAdminController
                 'token' => Tools::getAdminTokenLite($this->controller_name)
             )
         );
+
         $this->context->smarty->assign("module_dir", _PS_MODULE_DIR_ . $this->module->name);
+
         $output = $this->context->smarty->fetch(_PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/configure.tpl');
 
         $form = $output . $this->renderForm();
@@ -104,7 +106,7 @@ class AdminMoovaSetupController extends ModuleAdminController
      */
     protected function initConfigForm()
     {
-        $form = [
+        $this->fields_form[]['form'] = [
             'legend' => array(
                 'title' => $this->l('Settings'),
                 'icon' => 'icon-cogs',
@@ -146,14 +148,6 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'desc' => $this->l('Enter the app key'),
                     'required' => true
                 ),
-                array(
-                    'col' => 3,
-                    'type' => 'text',
-                    'name' => 'MOOVA_KEY_AUTHENTICATION',
-                    'label' => $this->l('App authentication'),
-                    'desc' => $this->l('Save this key and put it in Moova.io'),
-                    'required' => true
-                )
 
 
             ),
@@ -165,13 +159,11 @@ class AdminMoovaSetupController extends ModuleAdminController
 
         $values = [
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
         ];
 
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
-        $this->fields_form['form']['form'] = array_merge($this->fields_form['form']['form'], $form);
     }
 
     /**
@@ -179,7 +171,7 @@ class AdminMoovaSetupController extends ModuleAdminController
      */
     protected function initOriginForm()
     {
-        $form = [
+        $this->fields_form[]['form'] = [
             'legend' => array(
                 'title' => $this->l('Origin address'),
                 'icon' => 'icon-home',
@@ -263,74 +255,107 @@ class AdminMoovaSetupController extends ModuleAdminController
         ];
 
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
-        $this->fields_form['form']['form'] = array_merge($this->fields_form['form']['form'], $form);
     }
 
-    protected function getFreeShippingForm()
+    protected function initFreeShippingForm()
     {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Free Shipping'),
-                    'icon' => 'mi-payment',
-                ),
-
-                'input' => array(
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Min price'),
-                        'prefix' => '$',
-                        'name' => 'MOOVA_MIN_PRICE',
-                        'label' => $this->l('Min price'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Weight'),
-                        'name' => 'MOOVA_MIN_WEIGHT',
-                        'suffix' => 'KG',
-                        'label' => $this->l('Weight'),
-                        'required' => false
-                    ),
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Free shipping'),
-                        'name' => 'MOOVA_FREE_SHIPPING',
-                        'is_bool' => true,
-                        'desc' => $this->l('Enable minimum for free shipping'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Free Shipping'),
+                'icon' => 'mi-payment',
             ),
-        );
-    }
 
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-        $this->tpl_form_vars = [
+            'input' => array(
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Min price'),
+                    'prefix' => '$',
+                    'name' => 'MOOVA_MIN_PRICE',
+                    'label' => $this->l('Min price'),
+                    'required' => false
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('Free shipping'),
+                    'name' => 'MOOVA_FREE_SHIPPING',
+                    'is_bool' => true,
+                    'desc' => $this->l('Enable minimum for free shipping'),
+                    'values' => array(
+                        array(
+                            'id' => 'active_on',
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'id' => 'active_off',
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),
+
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+
+        $values = [
             'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
-            'MOOVA_MIN_WEIGHT' => Configuration::get('MOOVA_MIN_WEIGHT', ''),
             'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
         ];
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function initSpecialPricingForm()
+    {
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Free Shipping'),
+                'icon' => 'mi-payment',
+            ),
+
+            'input' => array(
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Min price'),
+                    'prefix' => '$',
+                    'name' => 'MOOVA_MIN_PRICE',
+                    'label' => $this->l('Min price'),
+                    'required' => false
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('Free shipping'),
+                    'name' => 'MOOVA_FREE_SHIPPING',
+                    'is_bool' => true,
+                    'desc' => $this->l('Enable minimum for free shipping'),
+                    'values' => array(
+                        array(
+                            'id' => 'active_on',
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'id' => 'active_off',
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),
+
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+
+        $values = [
+            'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
+            'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
+        ];
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
     }
 }
