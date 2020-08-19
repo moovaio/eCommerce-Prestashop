@@ -95,10 +95,16 @@ class Moova extends CarrierModule
         return [
             [
                 'class_name' => 'AdminMoovaSetupController',
-                'active' => true
+                'active' => true,
+                'name' => array(
+                    'en' => 'Setup',
+                ),
             ], [
                 'class_name' => 'AdminMoovaOrderController',
-                'active' => true
+                'active' => true,
+                'name' => array(
+                    'en' => 'Order',
+                ),
             ],
         ];
     }
@@ -111,8 +117,6 @@ class Moova extends CarrierModule
      */
     public function installAdminControllers()
     {
-        $result = true;
-
         foreach ($this->getAdminControllers() as $tabData) {
             if (Tab::getIdFromClassName($tabData['class_name'])) {
                 continue;
@@ -128,7 +132,7 @@ class Moova extends CarrierModule
             $tab->active = $tabData['active'];
         }
 
-        return $result;
+        return true;
     }
 
     public function uninstall()
@@ -145,8 +149,9 @@ class Moova extends CarrierModule
                 continue;
             }
             $tab = new Tab($tabId);
-            return $tab->delete();
+            $tab->delete();
         }
+        return true;
     }
 
     public function addOrderState($name)

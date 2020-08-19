@@ -31,6 +31,7 @@ class AdminMoovaSetupController extends ModuleAdminController
 {
     public function __construct()
     {
+        $this->bootstrap = true;
         parent::__construct();
     }
 
@@ -38,70 +39,52 @@ class AdminMoovaSetupController extends ModuleAdminController
 
     public function init()
     {
+        $this->fields_form['form']['form'] = [];
+        $this->initConfigForm();
+        $this->initOriginForm();
         parent::init();
-        /**
-         * If values have been submitted in the form, process.
-         * 
-         */
-
-        $message = ['status' => 'waiting'];
-        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
-        $form = [
-            $this->getConfigForm(),
-            $this->getOriginForm(),
-            $this->getFreeShippingForm()
-        ];
-
-        if ($showMessage) {
-            $this->postProcess();
-            $message = $this->validateformIsComplete($form);
-        }
-        $this->getConfigFormValues();
-        $this->context->smarty->assign('message', $message);
-        $this->context->smarty->assign('module_dir', $this->_path);
-        $this->context->controller->addJqueryUi('ui.autocomplete');
-        $this->context->controller->addJS($this->_path . 'views/js/settings.js');
-        $this->context->smarty->assign(array(
-            'token' => Tools::getAdminTokenLite($this->ORDER_TAB)
-        ));
-
-        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-        return $output . $this->renderForm($form);
     }
 
     public function initContent()
     {
-        $message = ['status' => 'waiting'];
-        throw new Exception('HOLA');
-        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
-        $form = [
-            $this->getConfigForm(),
-            $this->getOriginForm(),
-            $this->getFreeShippingForm()
-        ];
+        parent::initContent();
 
-        if ($showMessage) {
+        $this->context->smarty->assign('message', ["status" => "ok"]);
+        $this->context->controller->addJqueryUi('ui.autocomplete');
+        $this->context->controller->addJS(_PS_MODULE_DIR_ . $this->module->name . 'views/js/settings.js');
+        $this->context->smarty->assign(
+            array(
+                'token' => Tools::getAdminTokenLite($this->controller_name)
+            )
+        );
+        $this->context->smarty->assign("module_dir", _PS_MODULE_DIR_ . $this->module->name);
+        $output = $this->context->smarty->fetch(_PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/configure.tpl');
+
+        $form = $output . $this->renderForm();
+        $this->context->smarty->assign('content', $form);
+        $this->context->smarty->assign($form);
+    }
+    /*
+
+        $message = ['status' => 'waiting'];
+        $showMessage = ((bool) Tools::isSubmit('submitMoovaModule')) == true;
+        $form = $this->renderForm($this->getOriginForm());
+        $this->context->smarty->assign($form);
+        */
+    /*if ($showMessage) {
             $this->postProcess();
             $message = $this->validateformIsComplete($form);
         }
 
-        $this->context->smarty->assign('message', $message);
-        $this->context->smarty->assign('module_dir', $this->_path);
-        $this->context->controller->addJqueryUi('ui.autocomplete');
-        $this->context->controller->addJS($this->_path . 'views/js/settings.js');
-        $this->context->smarty->assign(array(
-            'token' => Tools::getAdminTokenLite($this->ORDER_TAB)
-        ));
-
-        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-        return $output . $this->renderForm($form);
+        
     }
-
-    public function renderForm()
+*/
+    public function renderForm($fields_form = null)
     {
         if ($fields_form === null) {
             $fields_form = $this->fields_form;
         }
+
         $helper = new \HelperForm();
         $helper->token = \Tools::getAdminTokenLite($this->controller_name);
         $helper->currentIndex = \AdminController::$currentIndex;
@@ -113,157 +96,174 @@ class AdminMoovaSetupController extends ModuleAdminController
             'fields_value' => $this->tpl_form_vars,
             'id_language' => $this->context->language->id,
         );
-
         return $helper->generateForm($fields_form);
     }
 
     /**
      * Create the structure of your form.
      */
-    protected function getConfigForm()
+    protected function initConfigForm()
     {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Settings'),
-                    'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'MOOVA_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode. ' .
-                            'Remember app id and key are different in production'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Enter the app id'),
-                        'name' => 'MOOVA_APP_ID',
-                        'label' => $this->l('App id'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'name' => 'MOOVA_APP_KEY',
-                        'label' => $this->l('App key'),
-                        'desc' => $this->l('Enter the app key'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'name' => 'MOOVA_KEY_AUTHENTICATION',
-                        'label' => $this->l('App authentication'),
-                        'desc' => $this->l('Save this key and put it in Moova.io'),
-                        'required' => true
-                    )
-
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
+        $form = [
+            'legend' => array(
+                'title' => $this->l('Settings'),
+                'icon' => 'icon-cogs',
             ),
-        );
+            'input' => array(
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('Live mode'),
+                    'name' => 'MOOVA_LIVE_MODE',
+                    'is_bool' => true,
+                    'desc' => $this->l('Use this module in live mode. ' .
+                        'Remember app id and key are different in production'),
+                    'values' => array(
+                        array(
+                            'id' => 'active_on',
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'id' => 'active_off',
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Enter the app id'),
+                    'name' => 'MOOVA_APP_ID',
+                    'label' => $this->l('App id'),
+                    'required' => true
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'name' => 'MOOVA_APP_KEY',
+                    'label' => $this->l('App key'),
+                    'desc' => $this->l('Enter the app key'),
+                    'required' => true
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'name' => 'MOOVA_KEY_AUTHENTICATION',
+                    'label' => $this->l('App authentication'),
+                    'desc' => $this->l('Save this key and put it in Moova.io'),
+                    'required' => true
+                )
 
-        /* $values = array(
-            'paypal_api_intent' => Configuration::get('PAYPAL_API_INTENT'),
-        );
-        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);*/
+
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+                'class' => 'btn btn-default pull-right button',
+            )
+        ];
+
+        $values = [
+            'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
+            'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
+            'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
+            'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
+        ];
+
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+        $this->fields_form['form']['form'] = array_merge($this->fields_form['form']['form'], $form);
     }
 
     /**
      * Get address config
      */
-    protected function getOriginForm()
+    protected function initOriginForm()
     {
-        return array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Origin address'),
-                    'icon' => 'icon-home',
-                ),
-
-                'input' => array(
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Name'),
-                        'name' => 'MOOVA_ORIGIN_NAME',
-                        'label' => $this->l('Name'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Surname'),
-                        'name' => 'MOOVA_ORIGIN_SURNAME',
-                        'label' => $this->l('Surname'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('email'),
-                        'name' => 'MOOVA_ORIGIN_EMAIL',
-                        'label' => $this->l('Email'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('phone'),
-                        'name' => 'MOOVA_ORIGIN_PHONE',
-                        'label' => $this->l('Phone'),
-                        'required' => false
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Street'),
-                        'name' => 'MOOVA_ORIGIN_ADDRESS',
-                        'label' => $this->l('Street'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Street'),
-                        'name' => 'MOOVA_ORIGIN_GOOGLE_PLACE_ID',
-                        'label' => $this->l('Street'),
-                        'required' => true
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Special observation. Example: red door'),
-                        'name' => 'MOOVA_ORIGIN_COMMENT',
-                        'label' => $this->l('Description'),
-                        'required' => false
-                    ),
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
+        $form = [
+            'legend' => array(
+                'title' => $this->l('Origin address'),
+                'icon' => 'icon-home',
             ),
-        );
+
+            'input' => array(
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Name'),
+                    'name' => 'MOOVA_ORIGIN_NAME',
+                    'label' => $this->l('Name'),
+                    'required' => true
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Surname'),
+                    'name' => 'MOOVA_ORIGIN_SURNAME',
+                    'label' => $this->l('Surname'),
+                    'required' => false
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('email'),
+                    'name' => 'MOOVA_ORIGIN_EMAIL',
+                    'label' => $this->l('Email'),
+                    'required' => false
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('phone'),
+                    'name' => 'MOOVA_ORIGIN_PHONE',
+                    'label' => $this->l('Phone'),
+                    'required' => false
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Street'),
+                    'name' => 'MOOVA_ORIGIN_ADDRESS',
+                    'label' => $this->l('Street'),
+                    'required' => true
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Street'),
+                    'name' => 'MOOVA_ORIGIN_GOOGLE_PLACE_ID',
+                    'label' => $this->l('Street'),
+                    'required' => true
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Special observation. Example: red door'),
+                    'name' => 'MOOVA_ORIGIN_COMMENT',
+                    'label' => $this->l('Description'),
+                    'required' => false
+                ),
+
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+            )
+        ];
+
+        $values = [
+            'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
+            'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
+            'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
+            'MOOVA_ORIGIN_EMAIL' => Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
+            'MOOVA_ORIGIN_COMMENT' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
+            'MOOVA_ORIGIN_GOOGLE_PLACE_ID' => Configuration::get('MOOVA_ORIGIN_GOOGLE_PLACE_ID', ''),
+            'MOOVA_ORIGIN_ADDRESS' => Configuration::get('MOOVA_ORIGIN_ADDRESS', ''),
+            'MOOVA_ORIGIN_FLOOR' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
+            'MOOVA_ORIGIN_APARTMENT' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
+            'MOOVA_ORIGIN_POSTAL_CODE' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', '')
+        ];
+
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+        $this->fields_form['form']['form'] = array_merge($this->fields_form['form']['form'], $form);
     }
 
     protected function getFreeShippingForm()
@@ -328,19 +328,6 @@ class AdminMoovaSetupController extends ModuleAdminController
     protected function getConfigFormValues()
     {
         $this->tpl_form_vars = [
-            'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
-            'MOOVA_KEY_AUTHENTICATION' => Configuration::get('MOOVA_KEY_AUTHENTICATION', ''),
-            'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
-            'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
-            'MOOVA_ORIGIN_PHONE' => Configuration::get('MOOVA_ORIGIN_PHONE', ''),
-            'MOOVA_ORIGIN_NAME' => Configuration::get('MOOVA_ORIGIN_NAME', ''),
-            'MOOVA_ORIGIN_SURNAME' => Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
-            'MOOVA_ORIGIN_EMAIL' => Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
-            'MOOVA_ORIGIN_COMMENT' => Configuration::get('MOOVA_ORIGIN_COMMENT', ''),
-            'MOOVA_ORIGIN_ADDRESS' => Configuration::get('MOOVA_ORIGIN_ADDRESS', ''),
-            'MOOVA_ORIGIN_FLOOR' => Configuration::get('MOOVA_ORIGIN_FLOOR', ''),
-            'MOOVA_ORIGIN_APARTMENT' => Configuration::get('MOOVA_ORIGIN_APARTMENT', ''),
-            'MOOVA_ORIGIN_POSTAL_CODE' => Configuration::get('MOOVA_ORIGIN_POSTAL_CODE', ''),
             'MOOVA_FREE_SHIPPING' => Configuration::get('MOOVA_FREE_SHIPPING', ''),
             'MOOVA_MIN_WEIGHT' => Configuration::get('MOOVA_MIN_WEIGHT', ''),
             'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', '')
