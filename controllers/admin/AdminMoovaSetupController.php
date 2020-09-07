@@ -25,7 +25,7 @@
  *  @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  */
 
-use Symfony\Component\HttpFoundation\JsonResponse;
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 class AdminMoovaSetupController extends ModuleAdminController
 {
@@ -46,6 +46,7 @@ class AdminMoovaSetupController extends ModuleAdminController
         $this->initOriginForm();
         $this->initFreeShippingForm();
         $this->initSpecialPricingForm();
+        $this->initMappingForm();
         parent::init();
     }
 
@@ -124,6 +125,25 @@ class AdminMoovaSetupController extends ModuleAdminController
                     ),
                 ),
                 array(
+                    'type' => 'switch',
+                    'label' => $this->l('Enable logs'),
+                    'name' => 'MOOVA_DEBUG',
+                    'is_bool' => true,
+                    'desc' => $this->l('Enable de logs, remember to disable this later!'),
+                    'values' => array(
+                        array(
+                            'id' => 'active_on',
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'id' => 'active_off',
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),
+                array(
                     'col' => 3,
                     'type' => 'text',
                     'desc' => $this->l('Enter the app id'),
@@ -152,6 +172,7 @@ class AdminMoovaSetupController extends ModuleAdminController
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
+            'MOOVA_DEBUG' => Configuration::get('MOOVA_DEBUG', false)
         ];
 
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
@@ -363,6 +384,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'required' => false
                 ),
 
+
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -373,7 +395,68 @@ class AdminMoovaSetupController extends ModuleAdminController
             'SPECIAL_PRICING_OPTIONS' => Configuration::get('SPECIAL_PRICING_OPTIONS', 'default'),
             'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', ''),
             'MOOVA_MAX_PRICE' => Configuration::get('MOOVA_MAX_PRICE', ''),
-            'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', '')
+            'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', ''),
+        ];
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function initMappingForm()
+    {
+        $order = new OrderState(1);
+        $status = array_merge([[
+            "id_order_state" => "disabled",
+            "name" => $this->l('Disabled')
+        ]], $order->getOrderStates($this->context->language->id));
+
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Sending status to Moova'),
+                'icon' => 'mi-payment',
+            ),
+            'input' => array(
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Process order'),
+                    'name' => 'MOOVA_STATUS_CREATE_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be created in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                ),
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Start shipping'),
+                    'name' => 'MOOVA_STATUS_START_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be STARTED in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                ),
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Cancel shipping'),
+                    'name' => 'MOOVA_STATUS_CANCEL_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be CANCELED in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                )
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+
+        $values = [
+            'MOOVA_STATUS_CREATE_SHIPPING' => Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled'),
+            'MOOVA_STATUS_START_SHIPPING' => Configuration::get('MOOVA_STATUS_START_SHIPPING', 'disabled'),
+            'MOOVA_STATUS_CANCEL_SHIPPING' => Configuration::get('MOOVA_STATUS_CANCEL_SHIPPING', 'disabled'),
         ];
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
     }

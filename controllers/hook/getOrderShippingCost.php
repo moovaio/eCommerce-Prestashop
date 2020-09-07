@@ -16,7 +16,7 @@ class MoovaGetOrderShippingCostController
     public function run($cart, $shipping_fees)
     {
         if ($this->context->customer->logged == true) {
-            $destination = $this->getDestination($cart);
+            $destination = $this->moova->getDestination($cart);
             $products = $cart->getProducts(true);
 
             $price = $this->moova->getPrice(
@@ -53,19 +53,5 @@ class MoovaGetOrderShippingCostController
             return Configuration::get('MOOVA_FIXED_PRICE', 'default');
         }
         return $price;
-    }
-
-    public function getDestination($cart)
-    {
-        $id_address_delivery = $cart->id_address_delivery;
-        $destination = new Address($id_address_delivery);
-        $country = new Country($destination->id_country);
-        $currency = new Currency($cart->id_currency);
-        $state = new State($destination->id_state);
-
-        $destination->country = $country->iso_code;
-        $destination->currency = $currency->iso_code;
-        $destination->state = $state->name;
-        return $destination;
     }
 }

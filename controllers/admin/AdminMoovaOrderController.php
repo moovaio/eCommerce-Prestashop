@@ -45,6 +45,7 @@ class AdminMoovaOrderController extends ModuleAdminController
     }
 
     public function ajaxProcessAutocomplete()
+    {
         echo json_encode($this->MoovaSDK->getAutocomplete(Tools::getValue('query')));
     }
 
@@ -57,28 +58,7 @@ class AdminMoovaOrderController extends ModuleAdminController
     public function ajaxProcessOrder()
     {
         $order = new Order(Tools::getValue('externalId'));
-        $cart = new Cart($order->id_cart);
-        $products = $order->getProducts();
-        $destination =  $this->moova->getDestination($cart);
-
-        $customer = new Customer((int) ($order->id_customer));
-
-
-        $destination->internalCode = $order->reference;
-        $destination->description = $order->getFirstMessage();
-
-        $moovaOrder = $this->MoovaSDK->processOrder(
-            $destination,
-            $products,
-            $customer
-        );
-
-        $carrier = pSQL($order->getIdOrderCarrier());
-        $trackingNumber = pSQL($moovaOrder->id);
-
-        $sql = "UPDATE " . _DB_PREFIX_ . "order_carrier SET tracking_number='$trackingNumber' WHERE id_order_carrier=$carrier";
-        Db::getInstance()->execute($sql);
-
+        $moovaOrder = $this->MoovaSDK->processOrder($order);
         echo json_encode($moovaOrder);
         die();
     }

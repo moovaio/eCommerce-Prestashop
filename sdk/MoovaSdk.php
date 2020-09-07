@@ -1,6 +1,7 @@
 <?php
 
 include_once(_PS_MODULE_DIR_ . '/moova/Api/MoovaApi.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 class MoovaSdk
 {
@@ -27,7 +28,9 @@ class MoovaSdk
     {
         if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
+        Log::info("getPrice - sending to moova:" . json_encode($payload));
         $res = $this->api->post('/b2b/budgets/estimate', $payload);
+        Log::info("getPrice - received from moova:" . json_encode($res));
         if (!$res || !isset($res->budget_id)) {
             return false;
         }
@@ -42,13 +45,13 @@ class MoovaSdk
         if (!$res || !isset($res->statusHistory)) {
             return [];
         }
+        Log::info("getStatus - Get status $id:" . json_encode($res));
         $res = json_decode(json_encode($res));
         return $res->statusHistory;
     }
 
     private function getOrderModel($to, $items)
     {
-        $street = $this->getAddress($to->address1);
         return [
             'from' => [
                 'address' => Configuration::get('MOOVA_ORIGIN_ADDRESS', ''),
@@ -64,8 +67,7 @@ class MoovaSdk
                 ]
             ],
             'to' => [
-                'street' => $street['street'],
-                'number' => $street['number'],
+                'address' => $to->address1,
                 'floor' =>  isset($to->address2) ? $to->address2 : '',
                 'city' => $to->city,
                 'state' => isset($to->state) ? $to->state : $to->city,
@@ -107,11 +109,16 @@ class MoovaSdk
      *
      * @return array|false
      */
-    public function processOrder($to, $items, $contact)
+    public function processOrder($order)
     {
+        $cart = new Cart($order->id_cart);
+        $items = $order->getProducts();
+        $to =  $this->getDestination($cart);
+        $to->description = $order->getFirstMessage();
+        $contact = new Customer((int) ($order->id_customer));
         if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
-        $payload['internalCode'] = $to->internalCode;
+        $payload['internalCode'] = $order->reference;
 
         $payload["to"]["contact"] = [
             "firstName" => $contact->firstname,
@@ -119,7 +126,17 @@ class MoovaSdk
             "email" =>   $contact->email,
             "phone" => $to->phone
         ];
+
+        Log::info("processOrder - Sending" . json_encode($payload));
         $res = $this->api->post('/b2b/shippings', $payload);
+        Log::info("processOrder - Received from Moova" . json_encode($res));
+
+        // From an Order ID you have 
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+
+        // 2- Set tracking number
+        $orderCarrier->tracking_number = $res->id;
+        $orderCarrier->save();
         return $res;
     }
 
@@ -132,6 +149,7 @@ class MoovaSdk
     public function getShippingLabel($orderId)
     {
         $res = $this->api->get("/b2b/shippings/$orderId/label");
+        Log::info("getShippingLabel " . json_encode($res));
         if (!isset($res->label)) {
             return false;
         }
@@ -153,21 +171,8 @@ class MoovaSdk
             $payload['reason'] = $reason;
         }
         $res = $this->api->post('/b2b/shippings/' . $orderId . '/' . strtolower($status), $payload);
+        Log::info("updateOrderStatus " . json_encode($res));
         return json_encode($res);
-    }
-
-    public static function getAddress($fullStreet)
-    {
-        //Now let's work on the first line
-        preg_match('/(^\d*[\D]*)(\d+)(.*)/i', $fullStreet, $res);
-        $line1 = $res;
-
-        if ((isset($line1[1]) && !empty($line1[1]) && $line1[1] !== " ") && !empty($line1)) {
-            //everything's fine. Go ahead 
-            $street_name = trim($line1[1]);
-            $street_number = trim($line1[2]);
-        }
-        return array('street' => $street_name, 'number' => $street_number);
     }
 
     /**
@@ -179,5 +184,19 @@ class MoovaSdk
     public function getAutocomplete($query)
     {
         return $this->api->get("/autocomplete", ["query" => $query]);
+    }
+
+    public function getDestination($cart)
+    {
+        $id_address_delivery = $cart->id_address_delivery;
+        $destination = new Address($id_address_delivery);
+        $country = new Country($destination->id_country);
+        $currency = new Currency($cart->id_currency);
+        $state = new State($destination->id_state);
+
+        $destination->country = $country->iso_code;
+        $destination->currency = $currency->iso_code;
+        $destination->state = $state->name;
+        return $destination;
     }
 }
