@@ -26,11 +26,19 @@ class MoovaSdk
      */
     public function getPrice($to, $items)
     {
-        if (!isset($to->address1)) return false;
-        $payload =  $this->getOrderModel($to, $items);
-        Log::info("getPrice - sending to moova:" . json_encode($payload));
-        $res = $this->api->post('/b2b/budgets/estimate', $payload);
-        Log::info("getPrice - received from moova:" . json_encode($res));
+        $currentCache = Cache::retrieve('moova_budget_request');
+        $payload = $this->getOrderModel($to, $items);
+        $destinationAddress = $currentCache ? $currentCache['to']['address'] : null;
+        if ($destinationAddress != $payload['to']['address']) {
+            Log::info("getPrice - sending to moova:" . json_encode($payload));
+            $res = $this->api->post('/b2b/budgets/estimate', $payload);
+            Cache::store('moova_budget_request', $payload);
+            Cache::store('moova_budget_response', $res);
+            Log::info("getPrice - received from moova:" . json_encode($res));
+        } else {
+            $res = Cache::retrieve('moova_budget_response');
+        }
+
         if (!$res || !isset($res->budget_id)) {
             return false;
         }
@@ -66,17 +74,8 @@ class MoovaSdk
                     "phone" => Configuration::get('MOOVA_ORIGIN_PHONE', '')
                 ]
             ],
-            'to' => [
-                'address' => $to->address1,
-                'floor' =>  isset($to->address2) ? $to->address2 : '',
-                'city' => $to->city,
-                'state' => isset($to->state) ? $to->state : $to->city,
-                'postalCode' => isset($to->postcode) ? $to->postcode : null,
-                'country' => $to->country,
-                'instructions' =>  isset($to->other) ? $to->other : '',
-            ],
+            'to' => $to,
             'description' => isset($to->description) ? (string) $to->description : '',
-            'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
                 'items' => $this->getItems($items)
@@ -114,9 +113,8 @@ class MoovaSdk
         $cart = new Cart($order->id_cart);
         $items = $order->getProducts();
         $to =  $this->getDestination($cart);
-        $to->description = $order->getFirstMessage();
+        $to['description'] = $order->getFirstMessage();
         $contact = new Customer((int) ($order->id_customer));
-        if (!isset($to->address1)) return false;
         $payload =  $this->getOrderModel($to, $items);
         $payload['internalCode'] = $order->reference;
 
@@ -124,7 +122,7 @@ class MoovaSdk
             "firstName" => $contact->firstname,
             "lastName" =>  $contact->lastname,
             "email" =>   $contact->email,
-            "phone" => $to->phone
+            "phone" => $to['phone']
         ];
 
         Log::info("processOrder - Sending" . json_encode($payload));
@@ -188,15 +186,50 @@ class MoovaSdk
 
     public function getDestination($cart)
     {
-        $id_address_delivery = $cart->id_address_delivery;
-        $destination = new Address($id_address_delivery);
-        $country = new Country($destination->id_country);
-        $currency = new Currency($cart->id_currency);
-        $state = new State($destination->id_state);
 
-        $destination->country = $country->iso_code;
-        $destination->currency = $currency->iso_code;
-        $destination->state = $state->name;
-        return $destination;
+        $id_address_delivery = $cart->id_address_delivery;
+        $destination = json_decode(json_encode(new Address($id_address_delivery), true), true);
+
+        //Add country
+        if (Configuration::get('MAP_MOOVA_CHECKOUT_country') === 'id_country') {
+            $country = new Country($destination['id_country']);
+            $country = $country->name[1];
+        } else {
+            $country = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_country');
+        }
+
+        //Add state 
+        if (Configuration::get('MAP_MOOVA_CHECKOUT_state') === 'id_state') {
+            $state = new State($destination['id_state']);
+            $state = $state->name;
+        } else {
+            $state = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_state');
+        }
+
+        $floor = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_floor');
+        $city = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_city');
+        $postalCode = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_postalCode');
+        $instructions = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_instructions');
+        $address = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_address');
+
+        $appendTo = [$city, $state, $country];
+        foreach ($appendTo as $append) {
+            if ($append) {
+                $address .= ",$append";
+            }
+        }
+        return [
+            'address' => $address,
+            'floor' =>  $floor,
+            'postalCode' => $postalCode,
+            'instructions' => $instructions,
+            'phone' => $destination['phone']
+        ];
+    }
+
+    private function checkIsset($param, $configkey)
+    {
+        $key = Configuration::get($configkey);
+        return isset($param[$key]) ? $param[$key] : '';
     }
 }

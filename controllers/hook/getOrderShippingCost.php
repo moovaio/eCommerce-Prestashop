@@ -40,7 +40,6 @@ class MoovaGetOrderShippingCostController
             }
         }
 
-
         $specialPricing = Configuration::get('SPECIAL_PRICING_OPTIONS', 'default');
         if ($specialPricing == 'range') {
             if ($price < Configuration::get('MOOVA_MIN_PRICE', 0)) {
