@@ -31,6 +31,7 @@ if (!defined('_PS_VERSION_')) {
 
 include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+include_once(_PS_MODULE_DIR_ . 'moova/classes/WebserviceSpecificManagementWebhookMoova.php');
 class Moova extends CarrierModule
 {
     protected $config_form = false;
@@ -73,16 +74,20 @@ class Moova extends CarrierModule
             return false;
         }
 
-        $carrier = $this->addCarrier();
-        $this->addZones($carrier);
-        $this->addGroups($carrier);
-        $this->addRanges($carrier);
-
+        $carrier = new Carrier(Configuration::get('MOOVA_CARRIER_ID'));
+        $hasCarrier = isset($carrier->name) && $carrier->deleted == 0;
+        if (!$hasCarrier) {
+            $carrier = $this->addCarrier();
+            $this->addZones($carrier);
+            $this->addGroups($carrier);
+            $this->addRanges($carrier);
+        }
         require_once(dirname(__FILE__) . '/sql/install.php');
         Configuration::updateValue('PS_WEBSERVICE', 1);
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
         return parent::install() &&
             $this->installAdminControllers() &&
+            $this->registerHook('addWebserviceResources') &&
             $this->registerHook('actionOrderStatusUpdate') &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
@@ -355,5 +360,21 @@ class Moova extends CarrierModule
                 "Order canceled in prestashop"
             );
         }
+    }
+
+    /**
+     * Add an entity in the Webservice
+     *
+     * @param array $params All existing resources from the core
+     * @return array New resources
+     */
+    public function hookAddWebserviceResources($params)
+    {
+        return array(
+            'WebhookMoova' => array(
+                'description' => 'This was created by de Moova module to change order statuses',
+                'specific_management' => true
+            ),
+        );
     }
 }
