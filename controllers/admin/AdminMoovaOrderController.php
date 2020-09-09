@@ -37,7 +37,6 @@ class AdminMoovaOrderController extends ModuleAdminController
         parent::__construct();
     }
 
-
     public function ajaxProcessInformReady()
     {
         $trackingNumber = Tools::getValue('trackingNumber');

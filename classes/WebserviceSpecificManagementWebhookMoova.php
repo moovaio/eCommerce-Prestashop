@@ -66,6 +66,11 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
         $listOfOrders = Db::getInstance()->executeS($sql);
         $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
         $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        if ($orderCarrier->id_carrier != Configuration::get('MOOVA_CARRIER_ID')) {
+            return;
+        }
+
         $status = $body['status'];
         $prestashopStatusId = Configuration::get("RECEIVE_MOOVA_STATUS_$status", 'disabled');
         if (isset($order->id_currency) && $prestashopStatusId && $prestashopStatusId != 'disabled') {

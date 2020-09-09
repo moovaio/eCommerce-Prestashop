@@ -102,7 +102,6 @@ class MoovaSdk
         }
         return $formated;
     }
-
     /**
      * Process an order in Moova's Api
      *
@@ -110,6 +109,14 @@ class MoovaSdk
      */
     public function processOrder($order)
     {
+        // From an Order ID you have 
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        Log::info("processOrder - starting with:" . json_encode($orderCarrier));
+        if (!empty($orderCarrier->tracking_number)) {
+            Log::info("processOrder - Order already created");
+            return;
+        }
+
         $cart = new Cart($order->id_cart);
         $items = $order->getProducts();
         $to =  $this->getDestination($cart);
@@ -129,8 +136,6 @@ class MoovaSdk
         $res = $this->api->post('/b2b/shippings', $payload);
         Log::info("processOrder - Received from Moova" . json_encode($res));
 
-        // From an Order ID you have 
-        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
 
         // 2- Set tracking number
         $orderCarrier->tracking_number = $res->id;

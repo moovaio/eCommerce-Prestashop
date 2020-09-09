@@ -26,7 +26,7 @@
  * to avoid any conflicts with others containers.
  */
 
-$(document).ready(function() {
+$(document).ready(function () {
   function moovaCreateShipping() {
     $.ajax({
       type: "POST",
@@ -37,18 +37,18 @@ $(document).ready(function() {
       dataType: "json",
       data: {
         ajax: true,
-        controller: "AdminOrderMoova",
+        controller: "AdminMoovaOrder",
         action: "Order",
         token: $("#moova_wrapper").attr("data-token"),
-        externalId: id_order
+        externalId: id_order,
       },
-      success: function(data) {
+      success: function (data) {
         if (!data) {
           alert("Error creating shipment");
         } else {
           window.location.reload(true);
         }
-      }
+      },
     });
   }
 
@@ -62,17 +62,17 @@ $(document).ready(function() {
       dataType: "json",
       data: {
         ajax: true,
-        controller: "AdminOrderMoova",
+        controller: "AdminMoovaOrder",
         action: "Label",
         token: $("#moova_wrapper").attr("data-token"),
-        trackingNumber: Moova.trackingNumber
+        trackingNumber: Moova.trackingNumber,
       },
-      success: function(data) {
+      success: function (data) {
         if (!data) {
           alert("Error getting label");
         }
         window.open(data.label, "_blank");
-      }
+      },
     });
   }
 
@@ -86,30 +86,30 @@ $(document).ready(function() {
       dataType: "json",
       data: {
         ajax: true,
-        controller: "AdminOrderMoova",
+        controller: "AdminMoovaOrder",
         action: "InformReady",
         token: $("#moova_wrapper").attr("data-token"),
-        trackingNumber: Moova.trackingNumber
+        trackingNumber: Moova.trackingNumber,
       },
-      success: function(data) {
+      success: function (data) {
         if (!data) {
           alert("Error changing status. Please change it manually in moova.io");
         }
         window.location.reload(true);
-      }
+      },
     });
   }
 
-  $("#moova_create_shipping").click(function() {
+  $("#moova_create_shipping").click(function () {
     $("#moova_create_shipping").attr("disabled", true);
     moovaCreateShipping();
   });
 
-  $("#moova_inform_ready").click(function() {
+  $("#moova_inform_ready").click(function () {
     moovaInformReady();
   });
 
-  $("#moova_get_label").click(function() {
+  $("#moova_get_label").click(function () {
     moovaGetLabel();
   });
 });

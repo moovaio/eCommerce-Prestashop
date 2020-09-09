@@ -35,7 +35,6 @@ include_once(_PS_MODULE_DIR_ . 'moova/classes/WebserviceSpecificManagementWebhoo
 class Moova extends CarrierModule
 {
     protected $config_form = false;
-    protected $ORDER_TAB = 'AdminMoovaOrderController';
     protected $MOOVA_WEBHOOK = 'moovaApi';
     public $id_carrier;
 
@@ -198,24 +197,21 @@ class Moova extends CarrierModule
     {
         $this->context->controller->addJquery();
 
-        $order = Order::getOrderByCartId(Context::getContext()->cart->id);
-        $orderCarrier = $this->getOrderCarrier($order);
-        $carrier =  new Carrier($orderCarrier['id_carrier']);
-        $isMoovaCarrier =  $carrier->name === 'Moova' && $carrier->external_module_name === 'moova';
-
-        if (!$isMoovaCarrier) {
-            return;
+        $orderId = Order::getOrderByCartId(Context::getContext()->cart->id);
+        $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        if ($orderCarrier->id_carrier != Configuration::get('MOOVA_CARRIER_ID')) {
+            return '';
         }
-
-        $trackingNumber = $orderCarrier ? $orderCarrier['tracking_number'] : false;
-        $status = $trackingNumber ? $this->moova->getStatus($trackingNumber) : [];
+        $trackingNumber = $orderCarrier->tracking_number;
+        $status = !empty($trackingNumber) ? $this->moova->getStatus($trackingNumber) : [];
 
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
         ]]);
 
         $this->context->smarty->assign(array(
-            'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
+            'token' => Tools::getAdminTokenLite('AdminMoovaOrder'),
             'trackingNumber' => $trackingNumber,
             'status' => $status
         ));
@@ -325,25 +321,14 @@ class Moova extends CarrierModule
         $carrier->addZone($SOUTH_AMERICA);
     }
 
-
-    private function getOrderCarrier($order)
-    {
-        try {
-            $order = new Order($order);
-            $carrier = $order->getIdOrderCarrier();
-            $sql = "SELECT * FROM " . _DB_PREFIX_ . "order_carrier WHERE id_order_carrier=$carrier";
-            $carrier = Db::getInstance()->ExecuteS($sql);
-            return $carrier[0];
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
     public function hookActionOrderStatusUpdate($params)
     {
         Log::info("hookActionOrderStatusUpdate:" . json_encode($params));
         $statusId = $params['newOrderStatus']->id;
         $order = new Order($params['id_order']);
+        if ($order->getIdOrderCarrier() != Configuration::get('MOOVA_CARRIER_ID')) {
+            return;
+        }
         $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
 
         if ($statusId == Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled')) {
