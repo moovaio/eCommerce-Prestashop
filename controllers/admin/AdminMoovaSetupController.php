@@ -25,7 +25,7 @@
  *  @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  */
 
-use Symfony\Component\HttpFoundation\JsonResponse;
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 class AdminMoovaSetupController extends ModuleAdminController
 {
@@ -46,6 +46,9 @@ class AdminMoovaSetupController extends ModuleAdminController
         $this->initOriginForm();
         $this->initFreeShippingForm();
         $this->initSpecialPricingForm();
+        $this->initMappingForm();
+        $this->initMappingFromMoovaToPrestashop();
+        $this->editCheckoutFields();
         parent::init();
     }
 
@@ -97,6 +100,7 @@ class AdminMoovaSetupController extends ModuleAdminController
      */
     protected function initConfigForm()
     {
+        $this->setWebhookUrl();
         $this->fields_form[]['form'] = [
             'legend' => array(
                 'title' => $this->l('Settings'),
@@ -110,6 +114,25 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'is_bool' => true,
                     'desc' => $this->l('Use this module in live mode. ' .
                         'Remember app id and key are different in production'),
+                    'values' => array(
+                        array(
+                            'id' => 'active_on',
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'id' => 'active_off',
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('Enable logs'),
+                    'name' => 'MOOVA_DEBUG',
+                    'is_bool' => true,
+                    'desc' => $this->l('Enable de logs, remember to disable this later!'),
                     'values' => array(
                         array(
                             'id' => 'active_on',
@@ -139,8 +162,22 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'desc' => $this->l('Enter the app key'),
                     'required' => true
                 ),
-
-
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'name' => 'MOOVA_WEBHOOK_URL',
+                    'label' => $this->l('Webhook URL'),
+                    'disabled' => true,
+                    'desc' => $this->l('paste this in the webhook url in https://dashboard.moova.io/profile/api'),
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'name' => 'MOOVA_WEBHOOK_HEADER',
+                    'label' => $this->l('Webhook HEADER'),
+                    'disabled' => true,
+                    'desc' => $this->l('paste this in the header url in https://dashboard.moova.io/profile/api'),
+                )
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -152,9 +189,34 @@ class AdminMoovaSetupController extends ModuleAdminController
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
+            'MOOVA_DEBUG' => Configuration::get('MOOVA_DEBUG', false),
+            'MOOVA_WEBHOOK_URL' => Configuration::get('MOOVA_WEBHOOK_URL', ''),
+            'MOOVA_WEBHOOK_HEADER' => Configuration::get('MOOVA_WEBHOOK_HEADER', '')
         ];
 
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function setWebhookUrl()
+    {
+        $apiAccess = new WebserviceKey(Configuration::get('MOOVA_WEBHOOK_API_ACCESS', ''));
+        if ($apiAccess && isset($apiAccess->key)) {
+            return;
+        }
+        $str = rand();
+        $key = md5($str);
+        $apiAccess = new WebserviceKey();
+        $apiAccess->key = $key;
+        $apiAccess->save();
+
+        $permissions = [
+            'WebhookMoova' => ['GET' => 1, 'POST' => 1, 'PUT' => 1, 'DELETE' => 1, 'HEAD' => 1]
+        ];
+        $url = _PS_BASE_URL_ . __PS_BASE_URI__ . 'api/WebhookMoova';
+        WebserviceKey::setPermissionForAccount($apiAccess->id, $permissions);
+        Configuration::updateValue('MOOVA_WEBHOOK_API_ACCESS', $apiAccess->id);
+        Configuration::updateValue('MOOVA_WEBHOOK_URL', $url);
+        Configuration::updateValue('MOOVA_WEBHOOK_HEADER', 'Basic ' . base64_encode($apiAccess->key . ':'));
     }
 
     /**
@@ -334,7 +396,6 @@ class AdminMoovaSetupController extends ModuleAdminController
                         'name' => 'name'
                     )
                 ),
-
                 array(
                     'col' => 3,
                     'type' => 'text',
@@ -363,6 +424,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'required' => false
                 ),
 
+
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -373,9 +435,199 @@ class AdminMoovaSetupController extends ModuleAdminController
             'SPECIAL_PRICING_OPTIONS' => Configuration::get('SPECIAL_PRICING_OPTIONS', 'default'),
             'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', ''),
             'MOOVA_MAX_PRICE' => Configuration::get('MOOVA_MAX_PRICE', ''),
-            'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', '')
+            'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', ''),
         ];
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function initMappingForm()
+    {
+        $order = new OrderState(1);
+        $status = array_merge([[
+            "id_order_state" => "disabled",
+            "name" => $this->l('Disabled')
+        ]], $order->getOrderStates($this->context->language->id));
+
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Sending status to Moova'),
+                'icon' => 'mi-payment',
+            ),
+            'input' => array(
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Process order'),
+                    'name' => 'MOOVA_STATUS_CREATE_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be created in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                ),
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Start shipping'),
+                    'name' => 'MOOVA_STATUS_START_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be STARTED in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                ),
+                array(
+                    'type' => 'select',
+                    'label' => $this->l('Cancel shipping'),
+                    'name' => 'MOOVA_STATUS_CANCEL_SHIPPING',
+                    'desc' => $this->l('When changing this status in the order, the shipping will be CANCELED in Moova'),
+                    'options' => array(
+                        'query' => $status,
+                        'id' => 'id_order_state',
+                        'name' => 'name'
+                    )
+                )
+            ),
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+
+        $values = [
+            'MOOVA_STATUS_CREATE_SHIPPING' => Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled'),
+            'MOOVA_STATUS_START_SHIPPING' => Configuration::get('MOOVA_STATUS_START_SHIPPING', 'disabled'),
+            'MOOVA_STATUS_CANCEL_SHIPPING' => Configuration::get('MOOVA_STATUS_CANCEL_SHIPPING', 'disabled'),
+        ];
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function initMappingFromMoovaToPrestashop()
+    {
+        $order = new OrderState(1);
+        $status = array_merge(
+            [[
+                "id_order_state" => "disabled",
+                "name" => $this->l('Disabled')
+            ]],
+            $order->getOrderStates($this->context->language->id)
+        );
+
+        $moovaStatuses = [
+            'DRAFT',
+            'READY',
+            'WAITING',
+            'CONFIRMED',
+            'ATPICKUPPOINT',
+            'DELIVERED',
+            'INCIDENCE',
+            'CANCELED',
+            'RETURNED',
+            'TOBERETURNED',
+            'WAITINGCLIENT'
+        ];
+
+        $inputs = [];
+        $values = [];
+        foreach ($moovaStatuses as $moovaState) {
+            $name = "RECEIVE_MOOVA_STATUS_$moovaState";
+            $inputs[] = [
+                'type' => 'select',
+                'label' => $this->l($moovaState),
+                'name' => $name,
+                'desc' => $this->l("When moova changes to status $moovaState the order will change to this state"),
+                'options' => [
+                    'query' => $status,
+                    'id' => 'id_order_state',
+                    'name' => 'name'
+                ]
+            ];
+
+            $values = array_merge($values, [
+                $name  => Configuration::get($name, 'disabled')
+            ]);
+        }
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Sending status to Moova'),
+                'icon' => 'mi-payment',
+            ),
+            'input' => $inputs,
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    protected function editCheckoutFields()
+    {
+        $address = new Address();
+        $checkoutOptions = [[
+            "id" => "disabled",
+            "name" => $this->l('Disabled')
+        ]];
+        foreach ($address as $key => $value) {
+            $checkoutOptions[] = [
+                'id' => $key,
+                'name' => $key
+            ];
+        }
+
+        $moovaFields = [
+            "address",
+            "floor",
+            'instructions',
+            'country',
+            'state',
+            'postalCode',
+            'description',
+            'city'
+        ];
+        $inputs = [];
+        foreach ($moovaFields as $field) {
+            $name = "MAP_MOOVA_CHECKOUT_$field";
+            $inputs[] = [
+                'type' => 'select',
+                'label' => $field,
+                'name' => $name,
+                'desc' => $this->l("Value to send in checkout"),
+                'options' => [
+                    'query' => $checkoutOptions,
+                    'id' => 'id',
+                    'name' => 'name'
+                ]
+            ];
+        }
+
+        $this->fields_form[]['form'] = [
+            'legend' => array(
+                'title' => $this->l('Advanced checkout Mapping'),
+                'description' => 'DO NOT edit this if you are not sure what you are doing',
+                'icon' => 'mi-payment',
+            ),
+            'input' => $inputs,
+            'submit' => array(
+                'title' => $this->l('Save'),
+            ),
+        ];
+        $values = array_merge(
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_address', 'address1'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_floor', 'address2'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_instructions', 'other'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_country', 'id_country'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_state', 'id_state'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_city', 'city'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_postalCode', 'postcode'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_description', 'description')
+        );
+        $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
+    }
+
+    private function getWithDefault($key, $default = null)
+    {
+        $value = Configuration::get($key);
+        $value =  (!$value && $default) ? $default : $value;
+        return [$key => $value];
     }
 
     /**

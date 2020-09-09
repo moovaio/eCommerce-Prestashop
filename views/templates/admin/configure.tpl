@@ -55,9 +55,9 @@
 	<div class="panel">
 		<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='moova'}</h3>
 		<p>
-			&raquo; {l s='You can get a PDF documentation to configure this module' mod='moova'} :
+			&raquo; {l s='Please if you have any problem with the installation read our documentation here' mod='moova'} :
 			<ul>
-				<li><a href="https://moova.io/wp-content/uploads/2020/01/moova_prestashop_1.6-1.7.pdf" target="_blank">{l s='English' mod='moova'}</a></li>
+				<li><a href="https://moova1.atlassian.net/servicedesk/customer/portal/3/topic/5c404312-979b-47ce-8152-5978b023f4aa/article/525402113" target="_blank">{l s='Documentation' mod='moova'}</a></li>
 			</ul>
 		</p>
 	</div>

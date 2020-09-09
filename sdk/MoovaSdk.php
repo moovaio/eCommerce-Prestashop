@@ -1,6 +1,7 @@
 <?php
 
 include_once(_PS_MODULE_DIR_ . '/moova/Api/MoovaApi.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 class MoovaSdk
 {
@@ -25,9 +26,19 @@ class MoovaSdk
      */
     public function getPrice($to, $items)
     {
-        if (!isset($to->address1)) return false;
-        $payload =  $this->getOrderModel($to, $items);
-        $res = $this->api->post('/b2b/budgets/estimate', $payload);
+        $currentCache = Cache::retrieve('moova_budget_request');
+        $payload = $this->getOrderModel($to, $items);
+        $destinationAddress = $currentCache ? $currentCache['to']['address'] : null;
+        if ($destinationAddress != $payload['to']['address']) {
+            Log::info("getPrice - sending to moova:" . json_encode($payload));
+            $res = $this->api->post('/b2b/budgets/estimate', $payload);
+            Cache::store('moova_budget_request', $payload);
+            Cache::store('moova_budget_response', $res);
+            Log::info("getPrice - received from moova:" . json_encode($res));
+        } else {
+            $res = Cache::retrieve('moova_budget_response');
+        }
+
         if (!$res || !isset($res->budget_id)) {
             return false;
         }
@@ -42,13 +53,13 @@ class MoovaSdk
         if (!$res || !isset($res->statusHistory)) {
             return [];
         }
+        Log::info("getStatus - Get status $id:" . json_encode($res));
         $res = json_decode(json_encode($res));
         return $res->statusHistory;
     }
 
     private function getOrderModel($to, $items)
     {
-        $street = $this->getAddress($to->address1);
         return [
             'from' => [
                 'address' => Configuration::get('MOOVA_ORIGIN_ADDRESS', ''),
@@ -63,18 +74,8 @@ class MoovaSdk
                     "phone" => Configuration::get('MOOVA_ORIGIN_PHONE', '')
                 ]
             ],
-            'to' => [
-                'street' => $street['street'],
-                'number' => $street['number'],
-                'floor' =>  isset($to->address2) ? $to->address2 : '',
-                'city' => $to->city,
-                'state' => isset($to->state) ? $to->state : $to->city,
-                'postalCode' => isset($to->postcode) ? $to->postcode : null,
-                'country' => $to->country,
-                'instructions' =>  isset($to->other) ? $to->other : '',
-            ],
+            'to' => $to,
             'description' => isset($to->description) ? (string) $to->description : '',
-            'currency' => $to->currency,
             'conf' => [
                 'assurance' => false,
                 'items' => $this->getItems($items)
@@ -101,26 +102,56 @@ class MoovaSdk
         }
         return $formated;
     }
-
     /**
      * Process an order in Moova's Api
      *
      * @return array|false
      */
-    public function processOrder($to, $items, $contact)
+    public function processOrder($order)
     {
-        if (!isset($to->address1)) return false;
+        // From an Order ID you have 
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        Log::info("processOrder - starting with:" . json_encode($orderCarrier));
+        if (!empty($orderCarrier->tracking_number)) {
+            Log::info("processOrder - Order already created");
+            return;
+        }
+
+        $cart = new Cart($order->id_cart);
+        $items = $order->getProducts();
+        $to =  $this->getDestination($cart);
+        $to['description'] = $order->getFirstMessage();
+        $contact = new Customer((int) ($order->id_customer));
         $payload =  $this->getOrderModel($to, $items);
-        $payload['internalCode'] = $to->internalCode;
+        $payload['internalCode'] = $order->reference;
 
         $payload["to"]["contact"] = [
             "firstName" => $contact->firstname,
             "lastName" =>  $contact->lastname,
             "email" =>   $contact->email,
-            "phone" => $to->phone
+            "phone" => $to['phone']
         ];
+
+        Log::info("processOrder - Sending" . json_encode($payload));
         $res = $this->api->post('/b2b/shippings', $payload);
+        Log::info("processOrder - Received from Moova" . json_encode($res));
+
+
+        // 2- Set tracking number
+        $orderCarrier->tracking_number = $res->id;
+        $orderCarrier->save();
         return $res;
+    }
+
+    public function isCarrierMoova($orderId)
+    {
+        $moovaCarrier = Carrier::getCarrierByReference(Configuration::get('MOOVA_CARRIER_ID_REFERENCE'));
+        $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        $carrier = new Carrier($order->id_carrier);
+        Log::info('isCarrierMoova - order carrier:' . json_encode($orderCarrier));
+        Log::info('isCarrierMoova - moova carrier:' . json_encode($carrier));
+        return $carrier->id_reference === $moovaCarrier->id_reference;
     }
 
     /**
@@ -132,6 +163,7 @@ class MoovaSdk
     public function getShippingLabel($orderId)
     {
         $res = $this->api->get("/b2b/shippings/$orderId/label");
+        Log::info("getShippingLabel " . json_encode($res));
         if (!isset($res->label)) {
             return false;
         }
@@ -153,21 +185,8 @@ class MoovaSdk
             $payload['reason'] = $reason;
         }
         $res = $this->api->post('/b2b/shippings/' . $orderId . '/' . strtolower($status), $payload);
-        return json_encode($res);
-    }
-
-    public static function getAddress($fullStreet)
-    {
-        //Now let's work on the first line
-        preg_match('/(^\d*[\D]*)(\d+)(.*)/i', $fullStreet, $res);
-        $line1 = $res;
-
-        if ((isset($line1[1]) && !empty($line1[1]) && $line1[1] !== " ") && !empty($line1)) {
-            //everything's fine. Go ahead 
-            $street_name = trim($line1[1]);
-            $street_number = trim($line1[2]);
-        }
-        return array('street' => $street_name, 'number' => $street_number);
+        Log::info("updateOrderStatus " . json_encode($res));
+        return $res;
     }
 
     /**
@@ -179,5 +198,54 @@ class MoovaSdk
     public function getAutocomplete($query)
     {
         return $this->api->get("/autocomplete", ["query" => $query]);
+    }
+
+    public function getDestination($cart)
+    {
+
+        $id_address_delivery = $cart->id_address_delivery;
+        $destination = json_decode(json_encode(new Address($id_address_delivery), true), true);
+
+        //Add country
+        if (Configuration::get('MAP_MOOVA_CHECKOUT_country') === 'id_country') {
+            $country = new Country($destination['id_country']);
+            $country = $country->name[1];
+        } else {
+            $country = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_country');
+        }
+
+        //Add state 
+        if (Configuration::get('MAP_MOOVA_CHECKOUT_state') === 'id_state') {
+            $state = new State($destination['id_state']);
+            $state = $state->name;
+        } else {
+            $state = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_state');
+        }
+
+        $floor = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_floor');
+        $city = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_city');
+        $postalCode = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_postalCode');
+        $instructions = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_instructions');
+        $address = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_address');
+
+        $appendTo = [$city, $state, $country];
+        foreach ($appendTo as $append) {
+            if ($append) {
+                $address .= ",$append";
+            }
+        }
+        return [
+            'address' => $address,
+            'floor' =>  $floor,
+            'postalCode' => $postalCode,
+            'instructions' => $instructions,
+            'phone' => $destination['phone']
+        ];
+    }
+
+    private function checkIsset($param, $configkey)
+    {
+        $key = Configuration::get($configkey);
+        return isset($param[$key]) ? $param[$key] : '';
     }
 }

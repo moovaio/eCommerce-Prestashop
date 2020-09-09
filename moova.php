@@ -30,11 +30,11 @@ if (!defined('_PS_VERSION_')) {
 }
 
 include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
-
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+include_once(_PS_MODULE_DIR_ . 'moova/classes/WebserviceSpecificManagementWebhookMoova.php');
 class Moova extends CarrierModule
 {
     protected $config_form = false;
-    protected $ORDER_TAB = 'AdminMoovaOrderController';
     protected $MOOVA_WEBHOOK = 'moovaApi';
     public $id_carrier;
 
@@ -73,16 +73,22 @@ class Moova extends CarrierModule
             return false;
         }
 
-        $carrier = $this->addCarrier();
-        $this->addZones($carrier);
-        $this->addGroups($carrier);
-        $this->addRanges($carrier);
-
+        $carrier = Carrier::getCarrierByReference(Configuration::get('MOOVA_CARRIER_ID_REFERENCE'));
+        Log::info('install - current carrier' . json_encode($carrier));
+        $hasCarrier = isset($carrier->name) && $carrier->deleted == 0;
+        if (!$hasCarrier) {
+            $carrier = $this->addCarrier();
+            $this->addZones($carrier);
+            $this->addGroups($carrier);
+            $this->addRanges($carrier);
+        }
         require_once(dirname(__FILE__) . '/sql/install.php');
-
+        Configuration::updateValue('PS_WEBSERVICE', 1);
         Configuration::updateValue('MOOVA_LIVE_MODE', false);
         return parent::install() &&
             $this->installAdminControllers() &&
+            $this->registerHook('addWebserviceResources') &&
+            $this->registerHook('actionOrderStatusUpdate') &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
@@ -192,24 +198,22 @@ class Moova extends CarrierModule
     {
         $this->context->controller->addJquery();
 
-        $order = Order::getOrderByCartId(Context::getContext()->cart->id);
-        $orderCarrier = $this->getOrderCarrier($order);
-        $carrier =  new Carrier($orderCarrier['id_carrier']);
-        $isMoovaCarrier =  $carrier->name === 'Moova' && $carrier->external_module_name === 'moova';
-
-        if (!$isMoovaCarrier) {
-            return;
+        $orderId = Order::getOrderByCartId(Context::getContext()->cart->id);
+        if (!$this->moova->isCarrierMoova($orderId)) {
+            Log::info('Is not a moova shipping');
+            return '';
         }
-
-        $trackingNumber = $orderCarrier ? $orderCarrier['tracking_number'] : false;
-        $status = $trackingNumber ? $this->moova->getStatus($trackingNumber) : [];
+        $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        $trackingNumber = $orderCarrier->tracking_number;
+        $status = empty($trackingNumber) ? [] : $this->moova->getStatus($trackingNumber);
 
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
         ]]);
 
         $this->context->smarty->assign(array(
-            'token' => Tools::getAdminTokenLite($this->ORDER_TAB),
+            'token' => Tools::getAdminTokenLite('AdminMoovaOrder'),
             'trackingNumber' => $trackingNumber,
             'status' => $status
         ));
@@ -235,20 +239,6 @@ class Moova extends CarrierModule
     public function getContent()
     {
         return Tools::redirectAdmin($this->context->link->getAdminLink('AdminMoovaSetup'));
-    }
-
-    public function getDestination($cart)
-    {
-        $id_address_delivery = $cart->id_address_delivery;
-        $destination = new Address($id_address_delivery);
-        $country = new Country($destination->id_country);
-        $currency = new Currency($cart->id_currency);
-        $state = new State($destination->id_state);
-
-        $destination->country = $country->iso_code;
-        $destination->currency = $currency->iso_code;
-        $destination->state = $state->name;
-        return $destination;
     }
 
     public function getOrderShippingCost($cart, $shipping_cost)
@@ -293,7 +283,8 @@ class Moova extends CarrierModule
             @copy(dirname(__FILE__) .
                 '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/'
                 . (int) $carrier->id . '.jpg');
-            Configuration::updateValue('MOOVA_CARRIER_ID', (int) $carrier->id);
+            Log::info('addCarrier - carrier: ' . json_encode($carrier));
+            Configuration::updateValue('MOOVA_CARRIER_ID_REFERENCE', (int) $carrier->id);
             return $carrier;
         }
 
@@ -332,17 +323,44 @@ class Moova extends CarrierModule
         $carrier->addZone($SOUTH_AMERICA);
     }
 
-
-    private function getOrderCarrier($order)
+    public function hookActionOrderStatusUpdate($params)
     {
-        try {
-            $order = new Order($order);
-            $carrier = $order->getIdOrderCarrier();
-            $sql = "SELECT * FROM " . _DB_PREFIX_ . "order_carrier WHERE id_order_carrier=$carrier";
-            $carrier = Db::getInstance()->ExecuteS($sql);
-            return $carrier[0];
-        } catch (Exception $e) {
-            return false;
+        Log::info("hookActionOrderStatusUpdate:" . json_encode($params));
+        $statusId = $params['newOrderStatus']->id;
+        $order = new Order($params['id_order']);
+        if (!$this->moova->isCarrierMoova($params['id_order'])) {
+            return;
         }
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        if ($statusId == Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled')) {
+            Log::info('hookActionOrderStatusUpdate - Creating the order');
+            $this->moova->processOrder($order);
+        } elseif ($statusId == Configuration::get('MOOVA_STATUS_START_SHIPPING', 'disabled')) {
+            Log::info('hookActionOrderStatusUpdate - Starting the order');
+            $this->moova->updateOrderStatus($orderCarrier->tracking_number, 'READY', null);
+        } elseif ($statusId == Configuration::get('MOOVA_STATUS_CANCEL_SHIPPING', 'disabled')) {
+            Log::info('hookActionOrderStatusUpdate - Cancelling the order');
+            $this->moova->updateOrderStatus(
+                $orderCarrier->tracking_number,
+                "CANCEL",
+                "Order canceled in prestashop"
+            );
+        }
+    }
+
+    /**
+     * Add an entity in the Webservice
+     *
+     * @param array $params All existing resources from the core
+     * @return array New resources
+     */
+    public function hookAddWebserviceResources($params)
+    {
+        return array(
+            'WebhookMoova' => array(
+                'description' => 'This was created by de Moova module to change order statuses',
+                'specific_management' => true
+            ),
+        );
     }
 }
