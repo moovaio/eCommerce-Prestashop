@@ -143,6 +143,17 @@ class MoovaSdk
         return $res;
     }
 
+    public function isCarrierMoova($orderId)
+    {
+        $moovaCarrier = Carrier::getCarrierByReference(Configuration::get('MOOVA_CARRIER_ID_REFERENCE'));
+        $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+        $carrier = new Carrier($order->id_carrier);
+        Log::info('isCarrierMoova - order carrier:' . json_encode($orderCarrier));
+        Log::info('isCarrierMoova - moova carrier:' . json_encode($carrier));
+        return $carrier->id_reference === $moovaCarrier->id_reference;
+    }
+
     /**
      * Gets the shipping label url for a Moova Shipment
      *
@@ -175,7 +186,7 @@ class MoovaSdk
         }
         $res = $this->api->post('/b2b/shippings/' . $orderId . '/' . strtolower($status), $payload);
         Log::info("updateOrderStatus " . json_encode($res));
-        return json_encode($res);
+        return $res;
     }
 
     /**

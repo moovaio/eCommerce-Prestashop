@@ -73,7 +73,8 @@ class Moova extends CarrierModule
             return false;
         }
 
-        $carrier = new Carrier(Configuration::get('MOOVA_CARRIER_ID'));
+        $carrier = Carrier::getCarrierByReference(Configuration::get('MOOVA_CARRIER_ID_REFERENCE'));
+        Log::info('install - current carrier' . json_encode($carrier));
         $hasCarrier = isset($carrier->name) && $carrier->deleted == 0;
         if (!$hasCarrier) {
             $carrier = $this->addCarrier();
@@ -198,13 +199,14 @@ class Moova extends CarrierModule
         $this->context->controller->addJquery();
 
         $orderId = Order::getOrderByCartId(Context::getContext()->cart->id);
-        $order = new Order($orderId);
-        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
-        if ($orderCarrier->id_carrier != Configuration::get('MOOVA_CARRIER_ID')) {
+        if (!$this->moova->isCarrierMoova($orderId)) {
+            Log::info('Is not a moova shipping');
             return '';
         }
+        $order = new Order($orderId);
+        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
         $trackingNumber = $orderCarrier->tracking_number;
-        $status = !empty($trackingNumber) ? $this->moova->getStatus($trackingNumber) : [];
+        $status = empty($trackingNumber) ? [] : $this->moova->getStatus($trackingNumber);
 
         Media::addJsDef(["Moova" => [
             "trackingNumber" => $trackingNumber
@@ -219,7 +221,6 @@ class Moova extends CarrierModule
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/order.tpl');
         return $output;
     }
-
 
     /**
      * Add the CSS & JavaScript files you want to be loaded in the BO.
@@ -282,7 +283,8 @@ class Moova extends CarrierModule
             @copy(dirname(__FILE__) .
                 '/views/img/carrier_image.jpg', _PS_SHIP_IMG_DIR_ . '/'
                 . (int) $carrier->id . '.jpg');
-            Configuration::updateValue('MOOVA_CARRIER_ID', (int) $carrier->id);
+            Log::info('addCarrier - carrier: ' . json_encode($carrier));
+            Configuration::updateValue('MOOVA_CARRIER_ID_REFERENCE', (int) $carrier->id);
             return $carrier;
         }
 
@@ -326,11 +328,10 @@ class Moova extends CarrierModule
         Log::info("hookActionOrderStatusUpdate:" . json_encode($params));
         $statusId = $params['newOrderStatus']->id;
         $order = new Order($params['id_order']);
-        if ($order->getIdOrderCarrier() != Configuration::get('MOOVA_CARRIER_ID')) {
+        if (!$this->moova->isCarrierMoova($params['id_order'])) {
             return;
         }
         $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
-
         if ($statusId == Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled')) {
             Log::info('hookActionOrderStatusUpdate - Creating the order');
             $this->moova->processOrder($order);

@@ -92,9 +92,9 @@ $(document).ready(function () {
         trackingNumber: Moova.trackingNumber,
       },
       success: function (data) {
-        if (!data) {
-          alert("Error changing status. Please change it manually in moova.io");
-        }
+        window.location.reload(true);
+      },
+      error: function () {
         window.location.reload(true);
       },
     });

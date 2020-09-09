@@ -40,7 +40,7 @@ class AdminMoovaOrderController extends ModuleAdminController
     public function ajaxProcessInformReady()
     {
         $trackingNumber = Tools::getValue('trackingNumber');
-        echo $this->MoovaSDK->updateOrderStatus($trackingNumber, 'READY', null);
+        echo json_encode($this->MoovaSDK->updateOrderStatus($trackingNumber, 'READY', null));
     }
 
     public function ajaxProcessAutocomplete()

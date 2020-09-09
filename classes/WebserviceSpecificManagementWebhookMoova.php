@@ -1,12 +1,18 @@
 <?php
 
 include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 
 class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificManagementInterface
 {
     protected $objOutput;
     protected $output;
     protected $wsObject;
+
+    public function __construct()
+    {
+        $this->moova = new MoovaSdk();
+    }
 
     public function setUrlSegment($segments)
     {
@@ -66,8 +72,7 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
         $listOfOrders = Db::getInstance()->executeS($sql);
         $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
         $order = new Order($orderId);
-        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
-        if ($orderCarrier->id_carrier != Configuration::get('MOOVA_CARRIER_ID')) {
+        if (!$this->moova->isCarrierMoova($orderId)) {
             return;
         }
 
