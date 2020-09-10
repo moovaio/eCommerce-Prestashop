@@ -1,6 +1,7 @@
 <?php
 
 include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 class MoovaGetOrderShippingCostController
 {
@@ -15,10 +16,12 @@ class MoovaGetOrderShippingCostController
 
     public function run($cart, $shipping_fees)
     {
+        Log::info('run - Trying to get price');
         if ($this->context->customer->logged == true) {
             $destination = $this->moova->getDestination($cart);
             $products = $cart->getProducts(true);
-
+            Log::info('run - destination:' . json_encode($destination));
+            Log::info('run - products:' . json_encode($products));
             $price = $this->moova->getPrice(
                 $destination,
                 $products
