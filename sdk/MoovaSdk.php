@@ -243,7 +243,7 @@ class MoovaSdk
 
         if ($lat && $lng) {
             $address = [
-                'addressDescription' => $address,
+                'addressDescription' => $address['address'],
                 "coords" => [
                     "lat" => $lat,
                     "lng" => $lng

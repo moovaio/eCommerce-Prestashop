@@ -27,10 +27,12 @@
 
 include_once(_PS_MODULE_DIR_ . '/moova/Api/ApiConnector.php');
 include_once(_PS_MODULE_DIR_ . '/moova/Api/ApiInterface.php');
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+
 class MoovaApi extends ApiConnector implements ApiInterface
 {
-    const DEV_BASE_URL = 'https://api-dev.moova.io/';
-    const PROD_BASE_URL = 'https://api-prod.moova.io/';
+    const DEV_BASE_URL = 'https://api-dev.moova.io';
+    const PROD_BASE_URL = 'https://api-prod.moova.io';
 
     public function __construct($clientid, $client_secret, $isProd)
     {
