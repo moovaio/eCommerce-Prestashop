@@ -28,8 +28,8 @@ class MoovaSdk
     {
         $currentCache = Cache::retrieve('moova_budget_request');
         $payload = $this->getOrderModel($to, $items);
-        $destinationAddress = $currentCache ? $currentCache['to']['address'] : null;
-        if ($destinationAddress != $payload['to']['address']) {
+        $destinationAddress = $currentCache && isset($currentCache['to']['address']) ? $currentCache['to']['address'] : null;
+        if (empty($payload['to']['address']) || $destinationAddress != $payload['to']['address']) {
             Log::info("getPrice - sending to moova:" . json_encode($payload));
             $res = $this->api->post('/b2b/budgets/estimate', $payload);
             Cache::store('moova_budget_request', $payload);
@@ -234,13 +234,29 @@ class MoovaSdk
                 $address .= ",$append";
             }
         }
-        return [
-            'address' => $address,
+
+        $lat = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_lat');
+        $lng = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_lng');
+        $address = [
+            'address' => $address
+        ];
+
+        if ($lat && $lng) {
+            $address = [
+                'addressDescription' => $address,
+                "coords" => [
+                    "lat" => $lat,
+                    "lng" => $lng
+                ]
+            ];
+        }
+
+        return array_merge($address, [
             'floor' =>  $floor,
             'postalCode' => $postalCode,
             'instructions' => $instructions,
             'phone' => $destination['phone']
-        ];
+        ]);
     }
 
     private function checkIsset($param, $configkey)

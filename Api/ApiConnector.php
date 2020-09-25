@@ -25,6 +25,8 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
+include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+
 abstract class ApiConnector
 {
     protected function exec($method,  $url, array $data, array $headers)
@@ -59,7 +61,8 @@ abstract class ApiConnector
 
         $result = curl_exec($curl);
         if (!$result) {
-            throw new error("Unable to connect");
+            Log::info('exec - Unable to connect in DEV');
+            return null;
         }
         curl_close($curl);
         return json_decode($result);

@@ -581,7 +581,9 @@ class AdminMoovaSetupController extends ModuleAdminController
             'state',
             'postalCode',
             'description',
-            'city'
+            'city',
+            'lat',
+            'lng'
         ];
         $inputs = [];
         foreach ($moovaFields as $field) {
@@ -618,7 +620,9 @@ class AdminMoovaSetupController extends ModuleAdminController
             $this->getWithDefault('MAP_MOOVA_CHECKOUT_state', 'id_state'),
             $this->getWithDefault('MAP_MOOVA_CHECKOUT_city', 'city'),
             $this->getWithDefault('MAP_MOOVA_CHECKOUT_postalCode', 'postcode'),
-            $this->getWithDefault('MAP_MOOVA_CHECKOUT_description', 'description')
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_description', 'description'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_lat', 'disabled'),
+            $this->getWithDefault('MAP_MOOVA_CHECKOUT_lng', 'disabled')
         );
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
     }
