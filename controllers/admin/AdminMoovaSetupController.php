@@ -561,17 +561,16 @@ class AdminMoovaSetupController extends ModuleAdminController
 
     protected function editCheckoutFields()
     {
-        $address = new Address();
-        $checkoutOptions = [[
-            "id" => "disabled",
-            "name" => $this->l('Disabled')
-        ]];
-        foreach ($address as $key => $value) {
-            $checkoutOptions[] = [
-                'id' => $key,
-                'name' => $key
-            ];
-        }
+        $db = \Db::getInstance();
+        $request = 'SHOW COLUMNS FROM ' . _DB_PREFIX_ . 'address';
+        /** @var array $result */
+        $address = $db->executeS($request);
+        $checkoutOptions = array_merge([
+            [
+                "Field" => "disabled",
+                "Field" => $this->l('Disabled')
+            ]
+        ], $address);
 
         $moovaFields = [
             "address",
@@ -595,8 +594,8 @@ class AdminMoovaSetupController extends ModuleAdminController
                 'desc' => $this->l("Value to send in checkout"),
                 'options' => [
                     'query' => $checkoutOptions,
-                    'id' => 'id',
-                    'name' => 'name'
+                    'id' => 'Field',
+                    'name' => 'Field'
                 ]
             ];
         }

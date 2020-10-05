@@ -204,7 +204,14 @@ class MoovaSdk
     {
 
         $id_address_delivery = $cart->id_address_delivery;
-        $destination = json_decode(json_encode(new Address($id_address_delivery), true), true);
+        $sql = new DbQuery();
+        $sql->select('*')->from('address')->where("id_address=$id_address_delivery");
+        $address = Db::getInstance()->executeS($sql);
+        if (empty($address)) {
+            return null;
+        }
+        $destination = $address[0];
+        Log::info('getDestination -' . json_encode($destination));
 
         //Add country
         if (Configuration::get('MAP_MOOVA_CHECKOUT_country') === 'id_country') {
@@ -250,7 +257,7 @@ class MoovaSdk
                 ]
             ];
         }
-
+        Log::info('getDestination- fullAddress:' . json_encode($address));
         return array_merge($address, [
             'floor' =>  $floor,
             'postalCode' => $postalCode,
@@ -262,6 +269,6 @@ class MoovaSdk
     private function checkIsset($param, $configkey)
     {
         $key = Configuration::get($configkey);
-        return isset($param[$key]) ? $param[$key] : '';
+        return empty($param[$key]) ? '' : $param[$key];
     }
 }
