@@ -1,8 +1,5 @@
 <?php
-
 /**
- * 2007-2020 PrestaShop
- *
  * NOTICE OF LICENSE
  *
  * This source file is subject to the Academic Free License (AFL 3.0)
