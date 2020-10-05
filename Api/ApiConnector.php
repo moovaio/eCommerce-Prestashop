@@ -29,7 +29,7 @@ include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
 
 abstract class ApiConnector
 {
-    protected function exec($method,  $url, array $data, array $headers)
+    protected function exec($method, $url, array $data, array $headers)
     {
         $curl = curl_init();
 

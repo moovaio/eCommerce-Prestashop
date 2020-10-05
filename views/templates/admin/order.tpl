@@ -22,38 +22,38 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-<div class="panel" id='moova_wrapper' data-token="{$token|escape:'htmlall':'UTF-8'}">
-    <div class="panel-heading">
-        <i class="icon-truck"></i> Moova 
+<div class='panel' id='moova_wrapper' data-token='{$token|escape:'htmlall':'UTF-8'}'>
+    <div class='panel-heading'>
+        <i class='icon-truck'></i> Moova 
     </div> 
     <div>
 
         {if !$trackingNumber}
-        <a class="btn btn-default" id='moova_create_shipping'>
-            <i class="icon-envelope"></i> {l s='Create shipping' mod='moova'}
+        <a class='btn btn-default' id='moova_create_shipping'>
+            <i class='icon-envelope'></i> {l s='Create shipping' mod='moova'}
         </a>
 
         {/if} {if $trackingNumber} {if sizeof($status) == 1}
-        <a class="btn btn-default" id='moova_inform_ready'>
-            <i class="icon-truck"></i> {l s='Inform is Ready' mod='moova'}
+        <a class='btn btn-default' id='moova_inform_ready'>
+            <i class='icon-truck'></i> {l s='Inform is Ready' mod='moova'}
         </a>
         {/if}
-        <a class="btn btn-default _blank" id='moova_get_label' target="_blank">
-            <i class="icon-file-text"></i> {l s='Get label' mod='moova'}
+        <a class='btn btn-default _blank' id='moova_get_label' target='_blank'>
+            <i class='icon-file-text'></i> {l s='Get label' mod='moova'}
         </a>
         {/if}
         <hr>
         <!-- Shipping block -->
-        <div class="table-responsive well hidden-print">
-            <table class="table" id="shipping_table">
+        <div class='table-responsive well hidden-print'>
+            <table class='table' id='shipping_table'>
                 <thead>
                     <tr>
                         <th>
-                            <span class="title_box ">{l s='Status' mod='moova'}</span>
+                            <span class='title_box '>{l s='Status' mod='moova'}</span>
                         </th>
 
                         <th>
-                            <span class="title_box ">{l s='Date' mod='moova'}</span>
+                            <span class='title_box '>{l s='Date' mod='moova'}</span>
                         </th>
                         <th></th>
                     </tr>
@@ -69,18 +69,18 @@
                 </tbody> 
             </table>
         </div>
-        <div style="display: none;"> 
-                <p>{l s="INCIDENCE" mod='moova'}</p>
-                <p>{l s="DRAFT" mod='moova'}</p>
-                <p>{l s="CONFIRMED" mod='moova'}</p> 
-                <p>{l s="WAITING" mod='moova'}</p> 
-                <p>{l s="READY" mod='moova'}</p> 
-                <p>{l s="CANCELED" mod='moova'}</p> 
-                <p>{l s="PICKEDUP" mod='moova'}</p>
-                <p>{l s="TOBERETURNED" mod='moova'}</p> 
-                <p>{l s="INTRANSIT" mod='moova'}</p> 
-                <p>{l s="RETURNED" mod='moova'}</p> 
-                <p>{l s="BLOCKED" mod='moova'}</p>
+        <div style='display: none;'> 
+                <p>{l s='INCIDENCE' mod='moova'}</p>
+                <p>{l s='DRAFT' mod='moova'}</p>
+                <p>{l s='CONFIRMED' mod='moova'}</p> 
+                <p>{l s='WAITING' mod='moova'}</p> 
+                <p>{l s='READY' mod='moova'}</p> 
+                <p>{l s='CANCELED' mod='moova'}</p> 
+                <p>{l s='PICKEDUP' mod='moova'}</p>
+                <p>{l s='TOBERETURNED' mod='moova'}</p> 
+                <p>{l s='INTRANSIT' mod='moova'}</p> 
+                <p>{l s='RETURNED' mod='moova'}</p> 
+                <p>{l s='BLOCKED' mod='moova'}</p>
         </div>
         <hr>
     </div>

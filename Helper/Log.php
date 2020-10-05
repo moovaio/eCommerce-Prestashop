@@ -2,12 +2,12 @@
 
 class Log
 {
-    const prefix = 'MoovaModule::';
+    const PREFIX = 'MoovaModule::';
     public static function info($message)
     {
         $initLog = \Configuration::get('MOOVA_DEBUG', false);
         if ($initLog) {
-            \PrestaShopLogger::addLog(self::prefix . $message);
+            \PrestaShopLogger::addLog(self::PREFIX . $message);
         }
     }
 
@@ -15,7 +15,7 @@ class Log
     {
         $initLog = Configuration::get('MOOVA_DEBUG', false);
         if ($initLog) {
-            PrestaShopLogger::addLog(self::prefix . $message, 4);
+            PrestaShopLogger::addLog(self::PREFIX . $message, 4);
         }
     }
 }

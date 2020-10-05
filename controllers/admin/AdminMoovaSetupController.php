@@ -55,8 +55,10 @@ class AdminMoovaSetupController extends ModuleAdminController
     public function initContent()
     {
         parent::initContent();
-
-        $message = \Tools::isSubmit($this->controller_name . '_config') ? $this->validateformIsComplete() : ['status' => 'waiting'];
+        $message = ['status' => 'waiting'];
+        if (\Tools::isSubmit($this->controller_name . '_config')) {
+            $message = $this->validateformIsComplete();
+        }
         $this->context->smarty->assign('message', $message);
         $this->context->controller->addJqueryUi('ui.autocomplete');
         $this->context->controller->addJS("/modules/{$this->module->name}/views/js/settings.js");
@@ -71,7 +73,7 @@ class AdminMoovaSetupController extends ModuleAdminController
 
         $output = $this->context->smarty->fetch(_PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/configure.tpl');
         $renderedForm = $this->renderForm();
-        $this->context->smarty->assign('content',  $output . $renderedForm);
+        $this->context->smarty->assign('content', $output . $renderedForm);
     }
 
 
@@ -448,6 +450,7 @@ class AdminMoovaSetupController extends ModuleAdminController
             "name" => $this->l('Disabled')
         ]], $order->getOrderStates($this->context->language->id));
 
+        $preText = $this->l('When changing this status in the order, the shipping will be');
         $this->fields_form[]['form'] = [
             'legend' => array(
                 'title' => $this->l('Sending status to Moova'),
@@ -458,7 +461,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'type' => 'select',
                     'label' => $this->l('Process order'),
                     'name' => 'MOOVA_STATUS_CREATE_SHIPPING',
-                    'desc' => $this->l('When changing this status in the order, the shipping will be created in Moova'),
+                    'desc' => $preText . $this->l(' created in Moova'),
                     'options' => array(
                         'query' => $status,
                         'id' => 'id_order_state',
@@ -469,7 +472,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'type' => 'select',
                     'label' => $this->l('Start shipping'),
                     'name' => 'MOOVA_STATUS_START_SHIPPING',
-                    'desc' => $this->l('When changing this status in the order, the shipping will be STARTED in Moova'),
+                    'desc' => $preText . $this->l(' STARTED in Moova'),
                     'options' => array(
                         'query' => $status,
                         'id' => 'id_order_state',
@@ -480,7 +483,7 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'type' => 'select',
                     'label' => $this->l('Cancel shipping'),
                     'name' => 'MOOVA_STATUS_CANCEL_SHIPPING',
-                    'desc' => $this->l('When changing this status in the order, the shipping will be CANCELED in Moova'),
+                    'desc' => $preText . $this->l(' CANCELED in Moova'),
                     'options' => array(
                         'query' => $status,
                         'id' => 'id_order_state',

@@ -26,7 +26,9 @@ class MoovaGetOrderShippingCostController
                 $destination,
                 $products
             );
-            if ($price === false) return false;
+            if ($price === false) {
+                return false;
+            }
             $totalPrice = $price + $shipping_fees;
             return $this->getRangePrice($totalPrice, $cart);
         }
@@ -51,7 +53,7 @@ class MoovaGetOrderShippingCostController
             if ($price > Configuration::get('MOOVA_MAX_PRICE', 0)) {
                 return Configuration::get('MOOVA_MAX_PRICE', 0);
             }
-        } else if ($specialPricing == 'fixed') {
+        } elseif ($specialPricing == 'fixed') {
             return Configuration::get('MOOVA_FIXED_PRICE', 'default');
         }
         return $price;

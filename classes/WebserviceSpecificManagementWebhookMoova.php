@@ -64,7 +64,7 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
 
     public function manage()
     {
-        $body = json_decode(file_get_contents('php://input'), true);
+        $body = json_decode(Tools::file_get_contents('php://input'), true);
 
         $trackingNumber = pSQL($body['internalCode']);
 
