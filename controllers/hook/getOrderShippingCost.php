@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2020·PrestaShop Moova
  *
@@ -41,22 +42,20 @@ class MoovaGetOrderShippingCostController
     public function run($cart, $shipping_fees)
     {
         Log::info('run - Trying to get price');
-        if ($this->context->customer->logged == true) {
-            $destination = $this->moova->getDestination($cart);
-            $products = $cart->getProducts(true);
-            Log::info('run - destination:' . json_encode($destination));
-            Log::info('run - products:' . json_encode($products));
-            $price = $this->moova->getPrice(
-                $destination,
-                $products
-            );
-            if ($price === false) {
-                return false;
-            }
-            $totalPrice = $price + $shipping_fees;
-            return $this->getRangePrice($totalPrice, $cart);
+
+        $destination = $this->moova->getDestination($cart);
+        $products = $cart->getProducts(true);
+        Log::info('run - destination:' . json_encode($destination));
+        Log::info('run - products:' . json_encode($products));
+        $price = $this->moova->getPrice(
+            $destination,
+            $products
+        );
+        if ($price === false) {
+            return false;
         }
-        return false;
+        $totalPrice = $price + $shipping_fees;
+        return $this->getRangePrice($totalPrice, $cart);
     }
 
     private function getRangePrice($price, $cart)
