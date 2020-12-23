@@ -45,8 +45,7 @@ class MoovaGetOrderShippingCostController
 
         $destination = $this->moova->getDestination($cart);
         $products = $cart->getProducts(true);
-        Log::info('run - destination:' . json_encode($destination));
-        Log::info('run - products:' . json_encode($products));
+        Log::info("run - Shipping_fees $shipping_fees");
         $price = $this->moova->getPrice(
             $destination,
             $products
@@ -54,8 +53,7 @@ class MoovaGetOrderShippingCostController
         if ($price === false) {
             return false;
         }
-        $totalPrice = $price + $shipping_fees;
-        return $this->getRangePrice($totalPrice, $cart);
+        return $this->getRangePrice($price, $cart) + $shipping_fees;
     }
 
     private function getRangePrice($price, $cart)
