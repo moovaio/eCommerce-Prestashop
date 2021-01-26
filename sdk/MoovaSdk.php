@@ -114,7 +114,7 @@ class MoovaSdk
         $formated = [];
         foreach ($items as $item) {
             $prefix = isset($item["name"]) ? '' : 'product_';
-            $formated = [
+            $formated[] = [
                 "name" => $item[$prefix . 'name'],
                 "price" =>  $item[$prefix . "price"],
                 "weight" =>  $item["weight"],
