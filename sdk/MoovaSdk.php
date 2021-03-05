@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -32,10 +33,14 @@ class MoovaSdk
     private $api;
     public function __construct()
     {
-        $liveMode = Configuration::get('MOOVA_LIVE_MODE') == true ? true : false;
+        $prefix = '';
+        $liveMode = Configuration::get('MOOVA_LIVE_MODE') == true;
+        if (!$liveMode) {
+            $prefix = 'DEV_';
+        }
         $this->api = new MoovaApi(
-            Configuration::get('MOOVA_APP_ID', ''),
-            Configuration::get('MOOVA_APP_KEY', ''),
+            Configuration::get($prefix . 'MOOVA_APP_ID', ''),
+            Configuration::get($prefix . 'MOOVA_APP_KEY', ''),
             $liveMode
         );
     }
@@ -115,13 +120,15 @@ class MoovaSdk
         foreach ($items as $item) {
             $prefix = isset($item["name"]) ? '' : 'product_';
             $formated[] = [
-                "name" => $item[$prefix . 'name'],
-                "price" =>  $item[$prefix . "price"],
-                "weight" =>  $item["weight"],
-                "length" =>  $item["depth"],
-                "width" =>  $item["width"],
-                "height" =>  $item["height"],
-                "quantity" => $item[$prefix . 'quantity'],
+                "items" => [
+                    "name" => $item[$prefix . 'name'],
+                    "price" =>  $item[$prefix . "price"],
+                    "weight" =>  $item["weight"],
+                    "length" =>  $item["depth"],
+                    "width" =>  $item["width"],
+                    "height" =>  $item["height"],
+                    "quantity" => $item[$prefix . 'quantity'],
+                ]
             ];
         }
         return $formated;
@@ -224,9 +231,13 @@ class MoovaSdk
         return $this->api->get("/autocomplete", ["query" => $query]);
     }
 
+    public function setCompanyWebhook($payload)
+    {
+        return $this->api->patch("/b2b/applications/webhooks", $payload);
+    }
+
     public function getDestination($cart)
     {
-
         $id_address_delivery = $cart->id_address_delivery;
         $sql = new DbQuery();
         $sql->select('*')->from('address')->where("id_address=$id_address_delivery");
@@ -236,7 +247,6 @@ class MoovaSdk
         }
         $destination = $address[0];
         Log::info('getDestination -' . json_encode($destination));
-
         //Add country
         if (Configuration::get('MAP_MOOVA_CHECKOUT_country') === 'id_country') {
             $country = new Country($destination['id_country']);
@@ -257,24 +267,25 @@ class MoovaSdk
         $city = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_city');
         $postalCode = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_postalCode');
         $instructions = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_instructions');
-        $address = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_address');
+        $street = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_address');
 
-        $appendTo = [$city, $state, $country];
-        foreach ($appendTo as $append) {
-            if ($append) {
-                $address .= ",$append";
+        if (!Configuration::get('GOOGLE_API_KEY', '')) {
+            $appendTo = [$city, $state, $country];
+            foreach ($appendTo as $append) {
+                if ($append) {
+                    $street .= ",$append";
+                }
             }
         }
-
         $lat = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_lat');
         $lng = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_lng');
         $address = [
-            'address' => $address
+            'address' => $street
         ];
 
         if ($lat && $lng) {
             $address = [
-                'addressDescription' => $address['address'],
+                "addressDescription" => $street,
                 "coords" => [
                     "lat" => $lat,
                     "lng" => $lng

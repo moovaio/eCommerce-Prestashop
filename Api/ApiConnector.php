@@ -31,13 +31,19 @@ abstract class ApiConnector
     protected function exec($method, $url, array $data, array $headers)
     {
         $curl = curl_init();
-
         switch ($method) {
             case "POST":
                 curl_setopt($curl, CURLOPT_POST, 1);
 
                 if ($data) {
                     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+                }
+
+                break;
+            case "PATCH":
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+                if ($data) {
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data, true));
                 }
 
                 break;
@@ -65,33 +71,6 @@ abstract class ApiConnector
         }
         curl_close($curl);
         return json_decode($result);
-    }
-
-    public function get($endpoint, array $body = [], array $headers = [])
-    {
-        $url = $this->getBaseUrl() . $endpoint;
-        if (!empty($body)) {
-            $url .= '?' . http_build_query($body);
-        }
-        return $this->exec('GET', $url, [], $headers);
-    }
-
-    public function post($endpoint, array $body = [], array $headers = [])
-    {
-        $url = $this->getBaseUrl() . $endpoint;
-        return $this->exec('POST', $url, $body, $headers);
-    }
-
-    public function put($endpoint, array $body = [], array $headers = [])
-    {
-        $url = $this->getBaseUrl() . $endpoint;
-        return $this->exec('PUT', $url, $body, $headers);
-    }
-
-    public function delete($endpoint, array $body = [], array $headers = [])
-    {
-        $url = $this->getBaseUrl() . $endpoint;
-        return $this->exec('DELETE', $url, $body, $headers);
     }
 
     protected function addParamsToUrl($url, $params)
