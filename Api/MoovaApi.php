@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -66,6 +67,18 @@ class MoovaApi extends ApiConnector implements ApiInterface
             "Content-Type: application/json",
         ];
         return $this->exec('POST', $url, $body, $headers);
+    }
+
+    public function patch($endpoint, array $body = [], array $headers = [])
+    {
+        $url = $this->getBaseUrl() . $endpoint;
+        $url = $this->addParamsToUrl($url, http_build_query($this->api_config));
+        $headers = [
+            "Authorization: $this->auth_header",
+            "Content-Type: application/json",
+        ];
+
+        return $this->exec('PATCH', $url, $body, $headers);
     }
 
     public function put($endpoint, array $body = [], array $headers = [])

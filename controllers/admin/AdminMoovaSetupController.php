@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -25,12 +26,14 @@
  */
 
 include_once(_PS_MODULE_DIR_ . '/moova/Helper/Log.php');
+include_once(_PS_MODULE_DIR_ . '/moova/sdk/MoovaSdk.php');
 
 class AdminMoovaSetupController extends ModuleAdminController
 {
     public function __construct()
     {
         $this->bootstrap = true;
+        $this->moova = new MoovaSdk();
         parent::__construct();
     }
 
@@ -101,7 +104,6 @@ class AdminMoovaSetupController extends ModuleAdminController
      */
     protected function initConfigForm()
     {
-        $this->setWebhookUrl();
         $this->fields_form[]['form'] = [
             'legend' => array(
                 'title' => $this->l('Settings'),
@@ -166,19 +168,44 @@ class AdminMoovaSetupController extends ModuleAdminController
                 array(
                     'col' => 3,
                     'type' => 'text',
-                    'name' => 'MOOVA_WEBHOOK_URL',
-                    'label' => $this->l('Webhook URL'),
-                    'disabled' => true,
-                    'desc' => $this->l('paste this in the webhook url in https://dashboard.moova.io/profile/api'),
+                    'desc' => $this->l('Enter the app id'),
+                    'name' => 'DEV_MOOVA_APP_ID',
+                    'label' => $this->l('Testing App id'),
+                    'required' => false
                 ),
                 array(
                     'col' => 3,
                     'type' => 'text',
-                    'name' => 'MOOVA_WEBHOOK_HEADER',
-                    'label' => $this->l('Webhook HEADER'),
-                    'disabled' => true,
-                    'desc' => $this->l('paste this in the header url in https://dashboard.moova.io/profile/api'),
-                )
+                    'name' => 'DEV_MOOVA_APP_KEY',
+                    'label' => $this->l('Testing App key'),
+                    'desc' => $this->l('Enter the app key'),
+                    'required' => false
+                ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'name' => 'GOOGLE_API_KEY',
+                    'label' => $this->l('Google Api key'),
+                    'desc' => $this->l('Enter credentials of Google'),
+                    'required' => false
+                ),
+                /*array(
+                    'type' => 'switch',
+                    'label' => $this->l('Enable Map in checkout'),
+                    'name' => 'IS_MAP_ENABLED_CHECKOUT',
+                    'is_bool' => true,
+                    'desc' => $this->l('Show the google map in the checkout'),
+                    'values' => array(
+                        array(
+                            'value' => true,
+                            'label' => $this->l('Enabled')
+                        ),
+                        array(
+                            'value' => false,
+                            'label' => $this->l('Disabled')
+                        )
+                    ),
+                ),*/
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -190,34 +217,13 @@ class AdminMoovaSetupController extends ModuleAdminController
             'MOOVA_LIVE_MODE' => Configuration::get('MOOVA_LIVE_MODE', true),
             'MOOVA_APP_ID' => Configuration::get('MOOVA_APP_ID', ''),
             'MOOVA_APP_KEY' => Configuration::get('MOOVA_APP_KEY', ''),
-            'MOOVA_DEBUG' => Configuration::get('MOOVA_DEBUG', false),
-            'MOOVA_WEBHOOK_URL' => Configuration::get('MOOVA_WEBHOOK_URL', ''),
-            'MOOVA_WEBHOOK_HEADER' => Configuration::get('MOOVA_WEBHOOK_HEADER', '')
+            'DEV_MOOVA_APP_ID' => Configuration::get('DEV_MOOVA_APP_ID', ''),
+            'DEV_MOOVA_APP_KEY' => Configuration::get('DEV_MOOVA_APP_KEY', ''),
+            'GOOGLE_API_KEY' => Configuration::get('GOOGLE_API_KEY', ''),
+            'MOOVA_DEBUG' => Configuration::get('MOOVA_DEBUG', false)
         ];
 
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
-    }
-
-    protected function setWebhookUrl()
-    {
-        $apiAccess = new WebserviceKey(Configuration::get('MOOVA_WEBHOOK_API_ACCESS', ''));
-        if ($apiAccess && isset($apiAccess->key)) {
-            return;
-        }
-        $str = rand();
-        $key = md5($str);
-        $apiAccess = new WebserviceKey();
-        $apiAccess->key = $key;
-        $apiAccess->save();
-
-        $permissions = [
-            'WebhookMoova' => ['GET' => 1, 'POST' => 1, 'PUT' => 1, 'DELETE' => 1, 'HEAD' => 1]
-        ];
-        $url = _PS_BASE_URL_ . __PS_BASE_URI__ . 'api/WebhookMoova';
-        WebserviceKey::setPermissionForAccount($apiAccess->id, $permissions);
-        Configuration::updateValue('MOOVA_WEBHOOK_API_ACCESS', $apiAccess->id);
-        Configuration::updateValue('MOOVA_WEBHOOK_URL', $url);
-        Configuration::updateValue('MOOVA_WEBHOOK_HEADER', 'Basic ' . base64_encode($apiAccess->key . ':'));
     }
 
     /**
@@ -458,31 +464,9 @@ class AdminMoovaSetupController extends ModuleAdminController
             'input' => array(
                 array(
                     'type' => 'select',
-                    'label' => $this->l('Process order'),
-                    'name' => 'MOOVA_STATUS_CREATE_SHIPPING',
-                    'desc' => $preText . $this->l(' created in Moova'),
-                    'options' => array(
-                        'query' => $status,
-                        'id' => 'id_order_state',
-                        'name' => 'name'
-                    )
-                ),
-                array(
-                    'type' => 'select',
                     'label' => $this->l('Start shipping'),
                     'name' => 'MOOVA_STATUS_START_SHIPPING',
                     'desc' => $preText . $this->l(' STARTED in Moova'),
-                    'options' => array(
-                        'query' => $status,
-                        'id' => 'id_order_state',
-                        'name' => 'name'
-                    )
-                ),
-                array(
-                    'type' => 'select',
-                    'label' => $this->l('Cancel shipping'),
-                    'name' => 'MOOVA_STATUS_CANCEL_SHIPPING',
-                    'desc' => $preText . $this->l(' CANCELED in Moova'),
                     'options' => array(
                         'query' => $status,
                         'id' => 'id_order_state',
@@ -515,9 +499,6 @@ class AdminMoovaSetupController extends ModuleAdminController
         );
 
         $moovaStatuses = [
-            'DRAFT',
-            'READY',
-            'WAITING',
             'CONFIRMED',
             'ATPICKUPPOINT',
             'DELIVERED',
@@ -641,12 +622,43 @@ class AdminMoovaSetupController extends ModuleAdminController
     public function postProcess()
     {
         $result = true;
-
+        $this->setWebhookUrl();
         foreach (\Tools::getAllValues() as $fieldName => $fieldValue) {
             Configuration::updateValue($fieldName, pSQL($fieldValue));
         }
-
         return $result;
+    }
+
+    protected function setWebhookUrl()
+    {
+        $apiAccess = new WebserviceKey(Configuration::get('MOOVA_WEBHOOK_API_ACCESS', ''));
+        if (!$apiAccess || empty($apiAccess->key)) {
+            $str = rand();
+            $key = md5($str);
+            $apiAccess = new WebserviceKey();
+            $apiAccess->key = $key;
+            $apiAccess->save();
+        }
+
+        $permissions = [
+            'WebhookMoova' => ['GET' => 1, 'POST' => 1, 'PUT' => 1, 'DELETE' => 1, 'HEAD' => 1]
+        ];
+        $url = _PS_BASE_URL_ . __PS_BASE_URI__ . 'api/WebhookMoova';
+        WebserviceKey::setPermissionForAccount($apiAccess->id, $permissions);
+        Configuration::updateValue('MOOVA_WEBHOOK_API_ACCESS', $apiAccess->id);
+
+        $payload = [
+            "webhook_enabled" => true,
+            "webhook_giveup_count" => 0,
+            "webhook_method" => "POST",
+            "webhook_url" => $url,
+            "webhook_headers" => [
+                ["Authorization" => 'Basic ' . base64_encode($apiAccess->key . ':')]
+            ]
+        ];
+        $response = $this->moova->setCompanyWebhook($payload);
+        Log::info(json_encode($response));
+        return $response;
     }
 
     private function validateformIsComplete()

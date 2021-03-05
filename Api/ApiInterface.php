@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -28,6 +29,7 @@ interface ApiInterface
 {
     public function get($endpoint, array $body = [], array $headers = []);
     public function post($endpoint, array $body = [], array $headers = []);
+    public function patch($endpoint, array $body = [], array $headers = []);
     public function put($endpoint, array $body = [], array $headers = []);
     public function delete($endpoint, array $body = [], array $headers = []);
 }

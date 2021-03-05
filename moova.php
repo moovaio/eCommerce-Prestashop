@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -87,6 +88,7 @@ class Moova extends CarrierModule
         return parent::install() &&
             $this->installAdminControllers() &&
             $this->registerHook('addWebserviceResources') &&
+            $this->registerHook('displayHeader') &&
             $this->registerHook('actionOrderStatusUpdate') &&
             $this->registerHook('moduleRoutes')  &&
             $this->registerHook('header') &&
@@ -303,12 +305,6 @@ class Moova extends CarrierModule
 
     protected function addRanges($carrier)
     {
-        $range_price = new RangePrice();
-        $range_price->id_carrier = $carrier->id;
-        $range_price->delimiter1 = '0';
-        $range_price->delimiter2 = '10000';
-        $range_price->add();
-
         $range_weight = new RangeWeight();
         $range_weight->id_carrier = $carrier->id;
         $range_weight->delimiter1 = '0';
@@ -331,13 +327,12 @@ class Moova extends CarrierModule
             return;
         }
         $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
-        if ($statusId == Configuration::get('MOOVA_STATUS_CREATE_SHIPPING', 'disabled')) {
-            Log::info('hookActionOrderStatusUpdate - Creating the order');
-            $this->moova->processOrder($order);
-        } elseif ($statusId == Configuration::get('MOOVA_STATUS_START_SHIPPING', 'disabled')) {
+        $this->moova->processOrder($order);
+
+        if ($statusId == Configuration::get('MOOVA_STATUS_START_SHIPPING', 'disabled')) {
             Log::info('hookActionOrderStatusUpdate - Starting the order');
             $this->moova->updateOrderStatus($orderCarrier->tracking_number, 'READY', null);
-        } elseif ($statusId == Configuration::get('MOOVA_STATUS_CANCEL_SHIPPING', 'disabled')) {
+        } elseif ($statusId == 6) {
             Log::info('hookActionOrderStatusUpdate - Cancelling the order');
             $this->moova->updateOrderStatus(
                 $orderCarrier->tracking_number,
@@ -361,5 +356,18 @@ class Moova extends CarrierModule
                 'specific_management' => true
             ),
         );
+    }
+
+    public function hookDisplayHeader()
+    {
+        $key = Configuration::get('GOOGLE_API_KEY', '');
+        //$mapEnabled = Configuration::get('IS_MAP_ENABLED_CHECKOUT', false);
+        if ($key) {
+            Media::addJsDef(array('moova' => array(
+                'key' => $key
+                //'mapEnabled' => $mapEnabled
+            )));
+            $this->context->controller->registerJavascript('moova', $this->_path . 'views/js/checkout.js');
+        }
     }
 }
