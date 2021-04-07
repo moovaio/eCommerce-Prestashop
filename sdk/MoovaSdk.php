@@ -106,9 +106,9 @@ class MoovaSdk
             'to' => $to,
             'description' => isset($to->description) ? (string) $to->description : '',
             'conf' => [
-                'assurance' => false,
-                'items' => $this->getItems($items)
+                'assurance' => false
             ],
+            'items' => $this->getItems($items),
             'type' => 'prestashop_24_horas_max',
             'flow' => 'manual',
         ];
@@ -120,15 +120,13 @@ class MoovaSdk
         foreach ($items as $item) {
             $prefix = isset($item["name"]) ? '' : 'product_';
             $formated[] = [
-                "items" => [
-                    "name" => $item[$prefix . 'name'],
-                    "price" =>  $item[$prefix . "price"],
-                    "weight" =>  $item["weight"],
-                    "length" =>  $item["depth"],
-                    "width" =>  $item["width"],
-                    "height" =>  $item["height"],
-                    "quantity" => $item[$prefix . 'quantity'],
-                ]
+                "name" => $item[$prefix . 'name'],
+                "price" =>  $item[$prefix . "price"],
+                "weight" =>  $item["weight"] * 1000,
+                "length" =>  $item["depth"],
+                "width" =>  $item["width"],
+                "height" =>  $item["height"],
+                "quantity" => $item[$prefix . 'quantity'],
             ];
         }
         return $formated;
