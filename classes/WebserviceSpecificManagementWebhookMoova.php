@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -92,9 +93,10 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
 
         $trackingNumber = pSQL($body['internalCode']);
 
-        $sql = "SELECT * FROM " . _DB_PREFIX_ . "orders WHERE reference = '$trackingNumber'LIMIT 1";
+        $sql = "SELECT * FROM " . _DB_PREFIX_ . "orders WHERE reference = '$trackingNumber' LIMIT 1";
         $listOfOrders = Db::getInstance()->executeS($sql);
         $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
+        Log::info("manage - ID ORDER $orderId");
         $order = new Order($orderId);
         if (!$this->moova->isCarrierMoova($orderId)) {
             return;
@@ -102,9 +104,14 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
 
         $status = $body['status'];
         $prestashopStatusId = Configuration::get("RECEIVE_MOOVA_STATUS_$status", 'disabled');
-        if (isset($order->id_currency) && $prestashopStatusId && $prestashopStatusId != 'disabled') {
-            Log::info("Changing status $status in order:$prestashopStatusId ");
-            $order->setCurrentState((int)$prestashopStatusId);
+        if ($prestashopStatusId != 'disabled') {
+            Log::info("carrier - Changing status $status in order:$prestashopStatusId ");
+
+
+            $order = new Order(1);
+            $history = new OrderHistory();
+            $history->id_order = (int)$order->id;
+            $history->changeIdOrderState($prestashopStatusId, (int)($order->id));
         }
         $this->output = $body['status'];
     }

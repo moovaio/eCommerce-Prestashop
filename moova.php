@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -42,7 +43,7 @@ class Moova extends CarrierModule
         $this->name = 'moova';
         $this->tab = 'shipping_logistics';
         $this->author = 'Moova.io';
-        $this->version = '1.1.8';
+        $this->version = '1.1.9';
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->author = 'Moova.io';
         $this->need_instance = 0;
