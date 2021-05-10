@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -631,14 +632,17 @@ class AdminMoovaSetupController extends ModuleAdminController
     protected function setWebhookUrl()
     {
         $apiAccess = new WebserviceKey(Configuration::get('MOOVA_WEBHOOK_API_ACCESS', ''));
-        if (!$apiAccess || empty($apiAccess->key)) {
-            $str = rand();
-            $key = md5($str);
-            $apiAccess = new WebserviceKey();
-            $apiAccess->key = $key;
-            $apiAccess->save();
+        $isAlreadyCreated = $apiAccess  && !empty($apiAccess->key);
+
+        if ($isAlreadyCreated) {
+            return true;
         }
 
+        $str = rand();
+        $key = md5($str);
+        $apiAccess = new WebserviceKey();
+        $apiAccess->key = $key;
+        $apiAccess->save();
         $permissions = [
             'WebhookMoova' => ['GET' => 1, 'POST' => 1, 'PUT' => 1, 'DELETE' => 1, 'HEAD' => 1]
         ];
