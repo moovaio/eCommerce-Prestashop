@@ -58,21 +58,32 @@ class MoovaSdk
         $currentCache = Cache::retrieve('moova_budget_request');
         $payload = $this->getOrderModel($to, $items);
         $destinationAddress = $currentCache && isset($currentCache['to']['address']) ? $currentCache['to']['address'] : null;
-        if (empty($payload['to']['address']) || $destinationAddress != $payload['to']['address']) {
-            Log::info("getPrice - sending to moova:" . json_encode($payload));
-            $res = $this->api->post('/b2b/budgets/estimate', $payload);
-            Cache::store('moova_budget_request', $payload);
-            Cache::store('moova_budget_response', $res);
-            Log::info("getPrice - received from moova:" . json_encode($res));
-        } else {
+        $isBudgetCached = isset($payload['to']['address']) && $destinationAddress != $payload['to']['address'];
+
+        if ($isBudgetCached) {
             $res = Cache::retrieve('moova_budget_response');
+            return isset($res->price) ? $res->price : false;
+        }
+        Cache::store('moova_budget_request', $payload);
+        if (!empty($payload['to']['lat'])) {
+            unset($payload['to']['postalCode']);
+            unset($payload['from']['postalCode']);
+        }
+        Log::info("getPrice - first estimate" . json_encode($payload));
+        try {
+            $res = $this->api->post('/b2b/budgets/estimate', $payload);
+        } catch (Exception $error) {
         }
 
-        if (!$res || !isset($res->budget_id)) {
-            return false;
+        if (empty($res->budget_id) && !empty($payload['to']['postalCode'])) {
+            unset($payload['to']['address']);
+            unset($payload['to']['coords']);
+            Log::info("getPrice - second estimate" . json_encode($payload));
+            $res = $this->api->post('/b2b/budgets/estimate', $payload);
+            Log::info("getPrice - second response" . json_encode($res));
         }
-
-        return $res->price;
+        Cache::store('moova_budget_response', $res);
+        return isset($res->price) ? $res->price : false;
     }
 
 
@@ -101,7 +112,8 @@ class MoovaSdk
                     "lastName" =>  Configuration::get('MOOVA_ORIGIN_SURNAME', ''),
                     "email" =>  Configuration::get('MOOVA_ORIGIN_EMAIL', ''),
                     "phone" => Configuration::get('MOOVA_ORIGIN_PHONE', '')
-                ]
+                ],
+                'country' => ''
             ],
             'to' => $to,
             'description' => isset($to->description) ? (string) $to->description : '',
@@ -246,13 +258,8 @@ class MoovaSdk
         $destination = $address[0];
         Log::info('getDestination -' . json_encode($destination));
         //Add country
-        if (Configuration::get('MAP_MOOVA_CHECKOUT_country') === 'id_country') {
-            $country = new Country($destination['id_country']);
-            $country = $country->name[1];
-        } else {
-            $country = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_country');
-        }
-
+        $country = new Country($destination['id_country']);
+        $country_name = $country->name[1];
         //Add state 
         if (Configuration::get('MAP_MOOVA_CHECKOUT_state') === 'id_state') {
             $state = new State($destination['id_state']);
@@ -268,7 +275,7 @@ class MoovaSdk
         $street = $this->checkIsset($destination, 'MAP_MOOVA_CHECKOUT_address');
 
         if (!Configuration::get('GOOGLE_API_KEY', '')) {
-            $appendTo = [$city, $state, $country];
+            $appendTo = [$city, $state, $country_name];
             foreach ($appendTo as $append) {
                 if ($append) {
                     $street .= ",$append";
@@ -295,7 +302,8 @@ class MoovaSdk
             'floor' =>  $floor,
             'postalCode' => $postalCode,
             'instructions' => $instructions,
-            'phone' => $destination['phone']
+            'phone' => $destination['phone'],
+            'country' => $country->iso_code
         ]);
     }
 
