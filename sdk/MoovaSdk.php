@@ -57,14 +57,15 @@ class MoovaSdk
     {
         $currentCache = Cache::retrieve('moova_budget_request');
         $payload = $this->getOrderModel($to, $items);
-        $destinationAddress = $currentCache && isset($currentCache['to']['address']) ? $currentCache['to']['address'] : null;
+        $res = '';
+        /*$destinationAddress = $currentCache && isset($currentCache['to']['address']) ? $currentCache['to']['address'] : null;
         $isBudgetCached = isset($payload['to']['address']) && $destinationAddress != $payload['to']['address'];
-
-        if ($isBudgetCached) {
+        if (false) {
+            Log::info('Getting from cache');
             $res = Cache::retrieve('moova_budget_response');
             return isset($res->price) ? $res->price : false;
         }
-        Cache::store('moova_budget_request', $payload);
+        Cache::store('moova_budget_request', $payload);*/
         if (!empty($payload['to']['lat'])) {
             unset($payload['to']['postalCode']);
             unset($payload['from']['postalCode']);
@@ -73,6 +74,7 @@ class MoovaSdk
         try {
             $res = $this->api->post('/b2b/budgets/estimate', $payload);
         } catch (Exception $error) {
+            Log::info("Unable to make a budget,trying next time");
         }
 
         if (empty($res->budget_id) && !empty($payload['to']['postalCode'])) {
