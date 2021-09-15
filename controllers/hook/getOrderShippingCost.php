@@ -43,12 +43,8 @@ class MoovaGetOrderShippingCostController
         Log::info('run - Trying to get price');
 
         $destination = $this->moova->getDestination($cart);
-        $products = $cart->getProducts(true);
-        Log::info("run - Shipping_fees $shipping_fees");
-        $price = $this->moova->getPrice(
-            $destination,
-            $products
-        );
+        $products = $cart->getProducts();
+        $price = $this->moova->getPrice($destination, $products);
         if ($price === false) {
             return false;
         }

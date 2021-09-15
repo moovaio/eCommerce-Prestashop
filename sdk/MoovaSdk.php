@@ -59,8 +59,8 @@ class MoovaSdk
         $payload = $this->getOrderModel($to, $items);
         $destinationAddress = $currentCache && isset($currentCache['to']['address']) ? $currentCache['to']['address'] : null;
         $isBudgetCached = isset($payload['to']['address']) && $destinationAddress != $payload['to']['address'];
-
-        if ($isBudgetCached) {
+        $res = null;
+        if (false) {
             $res = Cache::retrieve('moova_budget_response');
             return isset($res->price) ? $res->price : false;
         }
@@ -69,10 +69,11 @@ class MoovaSdk
             unset($payload['to']['postalCode']);
             unset($payload['from']['postalCode']);
         }
-        Log::info("getPrice - first estimate" . json_encode($payload));
+        //Log::info("getPrice - first estimate" . json_encode($payload));
         try {
             $res = $this->api->post('/b2b/budgets/estimate', $payload);
         } catch (Exception $error) {
+            Log::info($error);
         }
 
         if (empty($res->budget_id) && !empty($payload['to']['postalCode'])) {
@@ -80,8 +81,8 @@ class MoovaSdk
             unset($payload['to']['coords']);
             Log::info("getPrice - second estimate" . json_encode($payload));
             $res = $this->api->post('/b2b/budgets/estimate', $payload);
-            Log::info("getPrice - second response" . json_encode($res));
         }
+        Log::info("getPrice - response" . json_encode($res));
         Cache::store('moova_budget_response', $res);
         return isset($res->price) ? $res->price : false;
     }
@@ -150,38 +151,42 @@ class MoovaSdk
      */
     public function processOrder($order)
     {
-        // From an Order ID you have 
-        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
-        Log::info("processOrder - starting with:" . json_encode($orderCarrier));
-        if (!empty($orderCarrier->tracking_number)) {
-            Log::info("processOrder - Order already created");
-            return;
+        try {
+            // From an Order ID you have 
+            $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+            Log::info("processOrder - starting with:" . json_encode($orderCarrier));
+            if (!empty($orderCarrier->tracking_number)) {
+                Log::info("processOrder - Order already created");
+                return;
+            }
+
+            $cart = new Cart($order->id_cart);
+            $items = $order->getProducts();
+            $to =  $this->getDestination($cart);
+            $to['description'] = $order->getFirstMessage();
+            $contact = new Customer((int) ($order->id_customer));
+            $payload =  $this->getOrderModel($to, $items);
+            $payload['internalCode'] = $order->reference;
+
+            $payload["to"]["contact"] = [
+                "firstName" => $contact->firstname,
+                "lastName" =>  $contact->lastname,
+                "email" =>   $contact->email,
+                "phone" => $to['phone']
+            ];
+
+            Log::info("processOrder - Sending" . json_encode($payload));
+            $res = $this->api->post('/b2b/shippings', $payload);
+            Log::info("processOrder - Received from Moova" . json_encode($res));
+
+
+            // 2- Set tracking number
+            $orderCarrier->tracking_number = $res->id;
+            $orderCarrier->save();
+            return $res;
+        } catch (Exception $error) {
+            Log::info($error);
         }
-
-        $cart = new Cart($order->id_cart);
-        $items = $order->getProducts();
-        $to =  $this->getDestination($cart);
-        $to['description'] = $order->getFirstMessage();
-        $contact = new Customer((int) ($order->id_customer));
-        $payload =  $this->getOrderModel($to, $items);
-        $payload['internalCode'] = $order->reference;
-
-        $payload["to"]["contact"] = [
-            "firstName" => $contact->firstname,
-            "lastName" =>  $contact->lastname,
-            "email" =>   $contact->email,
-            "phone" => $to['phone']
-        ];
-
-        Log::info("processOrder - Sending" . json_encode($payload));
-        $res = $this->api->post('/b2b/shippings', $payload);
-        Log::info("processOrder - Received from Moova" . json_encode($res));
-
-
-        // 2- Set tracking number
-        $orderCarrier->tracking_number = $res->id;
-        $orderCarrier->save();
-        return $res;
     }
 
     public function isCarrierMoova($orderId)
