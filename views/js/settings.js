@@ -48,6 +48,7 @@ $(document).ready(function () {
     $("#MOOVA_FIXED_PRICE").closest(".form-group").hide();
     $("#MOOVA_MIN_PRICE").closest(".form-group").hide();
     $("#MOOVA_MAX_PRICE").closest(".form-group").hide();
+    $("#MOOVA_MULTIPLY_PRICE").closest(".form-group").hide();
 
     var specialPrice = $("#SPECIAL_PRICING_OPTIONS").val();
     if (specialPrice == "fixed") {
@@ -55,6 +56,8 @@ $(document).ready(function () {
     } else if (specialPrice == "range") {
       $("#MOOVA_MIN_PRICE").closest(".form-group").show();
       $("#MOOVA_MAX_PRICE").closest(".form-group").show();
+    } else if (specialPrice == "multiply") {
+       $("#MOOVA_MULTIPLY_PRICE").closest(".form-group").show();
     }
   }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2021·PrestaShop Moova
  *
@@ -66,11 +67,14 @@ class MoovaGetOrderShippingCostController
             if ($price < Configuration::get('MOOVA_MIN_PRICE', 0)) {
                 return Configuration::get('MOOVA_MIN_PRICE', 0);
             }
+
             if ($price > Configuration::get('MOOVA_MAX_PRICE', 0)) {
                 return Configuration::get('MOOVA_MAX_PRICE', 0);
             }
         } elseif ($specialPricing == 'fixed') {
             return Configuration::get('MOOVA_FIXED_PRICE', 'default');
+        } elseif ($specialPricing == 'multiply') {
+            return $price * (float) Configuration::get('MOOVA_MULTIPLY_PRICE', 'default');
         }
         return $price;
     }

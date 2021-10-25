@@ -383,6 +383,10 @@ class AdminMoovaSetupController extends ModuleAdminController
                 'key' => 'fixed',
                 'name' => 'Fixed'
             ),
+            array(
+                'key' => 'multiply',
+                'name' => 'Multiply'
+            ),
         );
 
         $this->fields_form[]['form'] = [
@@ -430,6 +434,15 @@ class AdminMoovaSetupController extends ModuleAdminController
                     'label' => $this->l('Fixed price'),
                     'required' => false
                 ),
+                array(
+                    'col' => 3,
+                    'type' => 'text',
+                    'desc' => $this->l('Multiply price'),
+                    'prefix' => 'X',
+                    'name' => 'MOOVA_MULTIPLY_PRICE',
+                    'label' => $this->l('Multiply price'),
+                    'required' => false
+                ),
 
 
             ),
@@ -443,6 +456,7 @@ class AdminMoovaSetupController extends ModuleAdminController
             'MOOVA_MIN_PRICE' => Configuration::get('MOOVA_MIN_PRICE', ''),
             'MOOVA_MAX_PRICE' => Configuration::get('MOOVA_MAX_PRICE', ''),
             'MOOVA_FIXED_PRICE' => Configuration::get('MOOVA_FIXED_PRICE', ''),
+            'MOOVA_MULTIPLY_PRICE' => Configuration::get('MOOVA_MULTIPLY_PRICE', ''),
         ];
         $this->tpl_form_vars = array_merge($this->tpl_form_vars, $values);
     }

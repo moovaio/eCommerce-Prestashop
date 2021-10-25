@@ -89,27 +89,34 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
 
     public function manage()
     {
-        $body = json_decode(Tools::file_get_contents('php://input'), true);
+        try {
+            $body = json_decode(Tools::file_get_contents('php://input'), true);
 
-        $trackingNumber = pSQL($body['internalCode']);
+            $trackingNumber = pSQL($body['internalCode']);
 
-        $sql = new DbQuery();
-        $sql->select('*')->from('orders')->where("reference = '$trackingNumber'")->limit(1);
-        $listOfOrders = Db::getInstance()->executeS($sql);
-        $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
-        Log::info("manage - ID ORDER $orderId");
-        if (!$this->moova->isCarrierMoova($orderId)) {
-            return;
+            $sql = new DbQuery();
+            $sql->select('*')->from('orders')->where("reference = '$trackingNumber'")->limit(1);
+            $listOfOrders = Db::getInstance()->executeS($sql);
+            $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
+            Log::info("manage - ID ORDER $orderId");
+            if (!$this->moova->isCarrierMoova($orderId)) {
+                return true;
+            }
+
+            $status = $body['status'];
+            $prestashopStatusId = Configuration::get("RECEIVE_MOOVA_STATUS_$status", 'disabled');
+            Log::info("manage - Current status $prestashopStatusId");
+            if ($prestashopStatusId != 'disabled') {
+                $history = new OrderHistory();
+                $history->id_order = (int)$orderId;
+                $history->changeIdOrderState((int)$prestashopStatusId, (int)($orderId));
+            }
+            $this->output = $body['status'];
+            return true;
+        } catch (Exception $error) {
+            Log::info("Unable to process hook");
+            Log::info($error);
+            return true;
         }
-
-        $status = $body['status'];
-        $prestashopStatusId = Configuration::get("RECEIVE_MOOVA_STATUS_$status", 'disabled');
-        Log::info("manage - Current status $prestashopStatusId");
-        if ($prestashopStatusId != 'disabled') {
-            $history = new OrderHistory();
-            $history->id_order = (int)$orderId;
-            $history->changeIdOrderState((int)$prestashopStatusId, (int)($orderId));
-        }
-        $this->output = $body['status'];
     }
 }
