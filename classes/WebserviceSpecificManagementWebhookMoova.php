@@ -91,16 +91,19 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
     {
         try {
             $body = json_decode(Tools::file_get_contents('php://input'), true);
-
+            Log::info(Tools::file_get_contents('php://input'));
+            if (!isset($body['internalCode'])) {
+                die(json_encode(array('status' => 'internal code invalid')));
+            }
             $trackingNumber = pSQL($body['internalCode']);
 
             $sql = new DbQuery();
             $sql->select('*')->from('orders')->where("reference = '$trackingNumber'")->limit(1);
             $listOfOrders = Db::getInstance()->executeS($sql);
-            $orderId = sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
+            $orderId = $listOfOrders && sizeof($listOfOrders) > 0 ? $listOfOrders[0]['id_order'] : null;
             Log::info("manage - ID ORDER $orderId");
             if (!$this->moova->isCarrierMoova($orderId)) {
-                return true;
+                die(json_encode(array('status' => 'ok')));
             }
 
             $status = $body['status'];
@@ -112,11 +115,13 @@ class WebserviceSpecificManagementWebhookMoova implements WebserviceSpecificMana
                 $history->changeIdOrderState((int)$prestashopStatusId, (int)($orderId));
             }
             $this->output = $body['status'];
-            return true;
-        } catch (Exception $error) {
+            die(json_encode(array('status' => 'ok')));
+        } catch (\Throwable $e) { // For PHP 7
             Log::info("Unable to process hook");
-            Log::info($error);
-            return true;
+            die(json_encode(array('status' => 'ok')));
+        } catch (\Exception $e) { // For PHP 5
+            Log::info("Unable to process hook");
+            die(json_encode(array('status' => 'ok')));
         }
     }
 }
